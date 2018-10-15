@@ -5,6 +5,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -46,6 +47,8 @@ public class AtrTrailingStop
 
     private Indicator lineBuy;
     private Indicator lineSell;
+
+    private Bar bar = new Bar();
 
     private double buyPrice = Double.NaN;
     private double sellPrice = Double.NaN;
@@ -90,15 +93,17 @@ public class AtrTrailingStop
     }
 
     @Override
-    public void onBar(OrderBook orderBook, Bar bar) {
+    public void onBar(OrderBook orderBook, Bar barExt) {
         tr = multiplier * (bar.getHigh() - bar.getLow());
         atr = ((atrNumBars - 1) * atr + tr) / atrNumBars;
         onBarUpdate(bar);
+        bar.startNext();
     }
 
     @Override
     public void onTrade(double price, int size, TradeInfo tradeInfo) {
         double pricePips = fixPrice(price);
+        bar.addTrade(tradeInfo.isBidAggressor, size, pricePips);
         if (lastTradePrice != pricePips) {
             lastTradePrice = pricePips;
             onPriceUpdate();
@@ -112,9 +117,10 @@ public class AtrTrailingStop
     @Override
     public StrategyPanel[] getCustomSettingsPanels() {
         StrategyPanel p1 = getColorsSettingsPanel();
-        StrategyPanel p2 = getOtherSettingsPanel();
-        StrategyPanel p3 = getDisplayPanel();
-        return new StrategyPanel[] { p1, p2, p3 };
+        StrategyPanel p2 = getLineStyleSettingsPanel();
+        StrategyPanel p3 = getParametersSettingsPanel();
+        StrategyPanel p4 = getStatisticsPanel();
+        return new StrategyPanel[] { p1, p2, p3, p4 };
     }
 
     private void onPriceUpdate() {
@@ -188,14 +194,31 @@ public class AtrTrailingStop
 
     private StrategyPanel getColorsSettingsPanel() {
         SettingsPanelBase panel = new SettingsPanelBase("Colors");
-        panel.add(new ColorsConfigItem("Color of Buy Trailing Stop:", defaultColorBuy, buildColorInterface(true),
+        panel.add(new ColorsConfigItem("Buy Trailing Stop:", defaultColorBuy, buildColorInterface(true),
                 () -> Log.info("Colors were changed")));
-        panel.add(new ColorsConfigItem("Color of Sell Trailing Stop:", defaultColorSell, buildColorInterface(false),
+        panel.add(new ColorsConfigItem("Sell Trailing Stop:", defaultColorSell, buildColorInterface(false),
                 () -> Log.info("Colors were changed")));
         return panel;
     }
 
-    private StrategyPanel getOtherSettingsPanel() {
+    private StrategyPanel getLineStyleSettingsPanel() {
+        SettingsPanelBase panel = new SettingsPanelBase("Lines style");
+        addLineTypeSettings(panel);
+        addLineWidthSettings(panel);
+        return panel;
+    }
+    
+    private void addLineTypeSettings(final SettingsPanelBase panel) {
+        JComboBox<String> c = new JComboBox<>(new String[] { "SOLID", "DASH", "DOT", "DASHDOT" }); // TODO: Actions
+        panel.addSettingsRow("Line type:", c);
+    }
+
+    private void addLineWidthSettings(final SettingsPanelBase panel) {
+        JComboBox<Integer> c = new JComboBox<>(new Integer[] { 1, 2, 3, 4, 5 }); // TODO: Actions
+        panel.addSettingsRow("Line width:", c);
+    }
+
+    private StrategyPanel getParametersSettingsPanel() {
         SettingsPanelBase panel = new SettingsPanelBase("Settings");
         addMultiplierSettings(panel);
         addBarPeriodSettings(panel);
@@ -260,7 +283,7 @@ public class AtrTrailingStop
         panel.addSettingsRow("Number of Bars:", c);
     }
 
-    private SettingsPanelBase getDisplayPanel() {
+    private SettingsPanelBase getStatisticsPanel() {
         SettingsPanelBase panel = new SettingsPanelBase("Current values");
         onAtrUpdate();
         panel.addSettingsRow("Last True Range (multiplied) [ticks]:", labelTr);
@@ -269,7 +292,9 @@ public class AtrTrailingStop
     }
 
     private void onBarUpdate(Bar bar) {
-        String t = new SimpleDateFormat("yyyyMMdd HH:mm:ss.SSS").format(new Date(currentTimeNanoseconds / 1_000_000L));
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd HH:mm:ss.SSS");
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+        String t = sdf.format(new Date(currentTimeNanoseconds / 1_000_000L));
         String info = String.format("onBar time: %s. OHLC: %.0f, %.0f, %.0f, %.0f. Volume Buy Sell: %d, %d", t,
                 bar.getOpen(), bar.getHigh(), bar.getLow(), bar.getClose(), bar.getVolumeBuy(), bar.getVolumeSell());
         Log.info(info);
