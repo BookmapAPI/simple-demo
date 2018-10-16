@@ -1,15 +1,15 @@
 package com.bookmap.sergey.custommodules.guiutils;
 
 import java.awt.Component;
-import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 import velox.gui.StrategyPanel;
 
@@ -19,35 +19,51 @@ public class BookmapSettingsPanel extends StrategyPanel {
 
     private static final int xgap = 10;
     private static final int ygap = 15;
+    
+    private int row = 0;
 
     public BookmapSettingsPanel(String title) {
         super(title);
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        add(Box.createRigidArea(new Dimension(0, ygap)));
+
+        GridBagLayout layout = new GridBagLayout();
+        layout.columnWidths = new int[] {xgap, 0, xgap, 0, xgap};
+        layout.columnWeights = new double[] {0, 1, 0, 1, 0};
+        setLayout(layout);
     }
 
     public void addSettingsItem(Component c) {
-        JPanel panel = createPanel(c);
-        panel.add(Box.createRigidArea(new Dimension(xgap, 0)));
-        add(panel);
-        add(Box.createRigidArea(new Dimension(0, ygap)));
+        
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridy = row++;
+        constraints.gridwidth = 3;
+        constraints.gridx = 1;
+        constraints.insets = new Insets(0, 0, ygap, 0);
+        constraints.anchor = GridBagConstraints.WEST;
+        
+        if (row == 1) {
+            constraints.insets.top = ygap;
+        }
+        
+        add(c, constraints);
     }
 
     public void addSettingsItem(String label, Component c) {
-        JPanel panel = createPanel(new JLabel(label));
-        panel.add(c);
-        panel.add(Box.createRigidArea(new Dimension(xgap, 0)));
-        add(panel);
-        add(Box.createRigidArea(new Dimension(0, ygap)));
-    }
-
-    private JPanel createPanel(Component c) {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.LINE_AXIS));
-        panel.add(Box.createRigidArea(new Dimension(xgap, 0)));
-        panel.add(c);
-        panel.add(Box.createHorizontalGlue());
-        return panel;
+        
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridy = row++;
+        constraints.gridwidth = 1;
+        constraints.gridx = 1;
+        constraints.insets = new Insets(0, 0, ygap, 0);
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        
+        if (row == 1) {
+            constraints.insets.top = ygap;
+        }
+        
+        add(new JLabel(label), constraints);
+        
+        constraints.gridx = 3;
+        add(c, constraints);
     }
 
     public static void main(String[] args) {
