@@ -29,7 +29,8 @@ public class IntrinsicPriceIndicator implements CustomModule, BarDataListener {
 
     @Override
     public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
-        line = api.registerIndicator("Intrinsic Price", GraphType.PRIMARY, Color.WHITE);
+        line = api.registerIndicator("Intrinsic Price", GraphType.PRIMARY);
+        line.setColor(Color.WHITE);
     }
 
     @Override
@@ -37,7 +38,7 @@ public class IntrinsicPriceIndicator implements CustomModule, BarDataListener {
     }
 
     @Override
-    public long getBarInterval() {
+    public long getInterval() {
         return Intervals.INTERVAL_100_MILLISECONDS;
     }
 

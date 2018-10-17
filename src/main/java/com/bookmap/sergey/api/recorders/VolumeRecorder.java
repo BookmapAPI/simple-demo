@@ -24,7 +24,7 @@ public class VolumeRecorder extends DataRecorderBase implements CustomModule, Ba
     }
 
     @Override
-    public long getBarInterval() {
+    public long getInterval() {
         return Intervals.INTERVAL_1_SECOND;
     }
 

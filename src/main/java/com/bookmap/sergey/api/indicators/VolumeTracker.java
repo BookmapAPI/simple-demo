@@ -16,15 +16,13 @@ import velox.api.layer1.annotations.Layer1SimpleAttachable;
 import velox.api.layer1.annotations.Layer1StrategyName;
 import velox.api.layer1.data.InstrumentInfo;
 import velox.api.layer1.data.TradeInfo;
-import velox.api.layer1.layers.utils.OrderBook;
 import velox.api.layer1.messages.indicators.Layer1ApiUserMessageModifyIndicator.GraphType;
 import velox.api.layer1.simplified.Api;
-import velox.api.layer1.simplified.Bar;
-import velox.api.layer1.simplified.BarDataListener;
 import velox.api.layer1.simplified.CustomModule;
 import velox.api.layer1.simplified.CustomSettingsPanelProvider;
 import velox.api.layer1.simplified.Indicator;
 import velox.api.layer1.simplified.InitialState;
+import velox.api.layer1.simplified.IntervalListener;
 import velox.api.layer1.simplified.Intervals;
 import velox.api.layer1.simplified.TimeListener;
 import velox.api.layer1.simplified.TradeDataListener;
@@ -34,7 +32,7 @@ import velox.gui.StrategyPanel;
 @Layer1StrategyName("Volume Tracker")
 @Layer1ApiVersion(Layer1ApiVersionValue.VERSION1)
 public class VolumeTracker
-        implements CustomModule, TradeDataListener, TimeListener, BarDataListener, CustomSettingsPanelProvider {
+        implements CustomModule, TradeDataListener, TimeListener, IntervalListener, CustomSettingsPanelProvider {
 
     protected Indicator indicatorBid;
     protected Indicator indicatorAsk;
@@ -52,8 +50,10 @@ public class VolumeTracker
 
     protected void init(Api api) {
         volumeCounter = new VolumeCounter(interval, volumeCounterType);
-        indicatorBid = api.registerIndicator("Volume Buy", GraphType.BOTTOM, Color.GREEN);
-        indicatorAsk = api.registerIndicator("Volume Sell", GraphType.BOTTOM, Color.RED);
+        indicatorBid = api.registerIndicator("Volume Buy", GraphType.BOTTOM);
+        indicatorBid.setColor(Color.GREEN);
+        indicatorAsk = api.registerIndicator("Volume Sell", GraphType.BOTTOM);
+        indicatorAsk.setColor(Color.RED);
     }
 
     @Override
@@ -62,23 +62,19 @@ public class VolumeTracker
     }
 
     @Override
-    public long getBarInterval() {
+    public long getInterval() {
         return Intervals.INTERVAL_50_MILLISECONDS;
     }
 
     @Override
-    public void onBar(OrderBook orderBook, Bar bar) {
-        updateIndicators();
+    public void onInterval() {
+        indicatorBid.addPoint(volumeCounter.getVolume(nanoseconds, true));
+        indicatorAsk.addPoint(volumeCounter.getVolume(nanoseconds, false));
     }
 
     @Override
     public void onTrade(double price, int size, TradeInfo tradeInfo) {
         volumeCounter.onTrade(nanoseconds, tradeInfo.isBidAggressor, size);
-    }
-
-    protected void updateIndicators() {
-        indicatorBid.addPoint(volumeCounter.getVolume(nanoseconds, true));
-        indicatorAsk.addPoint(volumeCounter.getVolume(nanoseconds, false));
     }
 
     protected void onSettingsChange() {

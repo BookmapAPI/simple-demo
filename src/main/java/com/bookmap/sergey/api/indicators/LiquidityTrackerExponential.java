@@ -25,7 +25,9 @@ public class LiquidityTrackerExponential extends LiquidityTracker {
     }
     
     protected void registerIndicators(Api api) {
-        indicatorBid = api.registerIndicator("Liquidity Bid Exponential", GraphType.BOTTOM, Color.GREEN);
-        indicatorAsk = api.registerIndicator("Liquidity Ask Exponential", GraphType.BOTTOM, Color.RED);
+        indicatorBid = api.registerIndicator("Liquidity Bid Exponential", GraphType.BOTTOM);
+        indicatorBid.setColor(Color.GREEN);
+        indicatorAsk = api.registerIndicator("Liquidity Ask Exponential", GraphType.BOTTOM);
+        indicatorAsk.setColor(Color.RED);
     }
 }

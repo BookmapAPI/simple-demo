@@ -27,8 +27,10 @@ public class VolatilityIndicator extends LiquidityTrackerExponential implements 
     private long nanoseconds;
 
     protected void registerIndicators(Api api) {
-        indicatorBid = api.registerIndicator("Volatility Absolute", GraphType.BOTTOM, Color.WHITE);
-        indicatorAsk = api.registerIndicator("Volatility Directional", GraphType.BOTTOM, Color.BLUE);
+        indicatorBid = api.registerIndicator("Volatility Absolute", GraphType.BOTTOM);
+        indicatorBid.setColor(Color.WHITE);
+        indicatorAsk = api.registerIndicator("Volatility Directional", GraphType.BOTTOM);
+        indicatorAsk.setColor(Color.BLUE);
     }
 
     @Override
@@ -42,7 +44,7 @@ public class VolatilityIndicator extends LiquidityTrackerExponential implements 
     }
 
     @Override
-    protected void onBarTemp() {
+    public void onInterval() {
         double bidSize = orderBook.getSizeSum(true);
         double askSize = orderBook.getSizeSum(false);
         if (bidSize == 0 || askSize == 0) {

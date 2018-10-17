@@ -35,7 +35,8 @@ public class QuotesDelta implements CustomModule, BarDataListener, DepthDataList
 
     @Override
     public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
-        line1 = api.registerIndicator("Quotes Delta", GraphType.BOTTOM, Color.ORANGE);
+        line1 = api.registerIndicator("Quotes Delta", GraphType.BOTTOM);
+        line1.setColor(Color.ORANGE);
     }
 
     @Override
@@ -44,7 +45,7 @@ public class QuotesDelta implements CustomModule, BarDataListener, DepthDataList
     }
 
     @Override
-    public long getBarInterval() {
+    public long getInterval() {
         return Intervals.INTERVAL_100_MILLISECONDS;
     }
 

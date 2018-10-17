@@ -30,7 +30,8 @@ public class WeightedMidprice implements CustomModule, TradeDataListener, DepthD
 
     @Override
     public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
-        indicator = api.registerIndicator("Weighted Midprice", GraphType.PRIMARY, Color.WHITE);
+        indicator = api.registerIndicator("Weighted Midprice", GraphType.PRIMARY);
+        indicator.setColor(Color.WHITE);
         this.initialState = initialState;
     }
 
@@ -51,8 +52,7 @@ public class WeightedMidprice implements CustomModule, TradeDataListener, DepthD
 
     @Override
     public void onSnapshotEnd() {
-        TradeInfo tradeInfo = new TradeInfo(false, initialState.isLastTradeBid());
-        onTrade(initialState.getLastTradePrice(), initialState.getLastTradeSize(), tradeInfo);
+        onTrade(initialState.getLastTradePrice(), initialState.getLastTradeSize(), initialState.getTradeInfo());
     }
 
     @Override

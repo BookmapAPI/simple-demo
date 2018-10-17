@@ -10,16 +10,13 @@ import velox.api.layer1.data.InstrumentInfo;
 import velox.api.layer1.layers.utils.OrderBook;
 import velox.api.layer1.simplified.Api;
 import velox.api.layer1.simplified.Bar;
-import velox.api.layer1.simplified.BarDataListener;
-import velox.api.layer1.simplified.CustomModule;
 import velox.api.layer1.simplified.InitialState;
-import velox.api.layer1.simplified.Intervals;
 
 @Layer1SimpleAttachable
 @Layer1StrategyName("Volume Recorder Exponential")
 @Layer1ApiVersion(Layer1ApiVersionValue.VERSION1)
-public class VolumeRecorderExponential extends DataRecorderBase implements CustomModule, BarDataListener {
-    private final int[] halfLifeBars = new int[] {0, 4, 12, 36};
+public class VolumeRecorderExponential extends VolumeRecorder {
+    private final int[] halfLifeBars = new int[] { 0, 4, 12, 36 };
     private ExponentialSumBars[] emaBuy = new ExponentialSumBars[halfLifeBars.length];
     private ExponentialSumBars[] emaSell = new ExponentialSumBars[halfLifeBars.length];
     private Object[] output = new Object[2 * halfLifeBars.length];
@@ -37,16 +34,11 @@ public class VolumeRecorderExponential extends DataRecorderBase implements Custo
         for (int i = 0; i < halfLifeBars.length; i++) {
             emaBuy[i].onBar(bar.getVolumeBuy());
             emaSell[i].onBar(bar.getVolumeSell());
-            
+
             output[2 * i] = emaBuy[i].getValueLong();
             output[2 * i + 1] = emaSell[i].getValueLong();
         }
         writeObjects(output);
-    }
-
-    @Override
-    public long getBarInterval() {
-        return Intervals.INTERVAL_1_SECOND;
     }
 
     @Override

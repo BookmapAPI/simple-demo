@@ -26,8 +26,10 @@ public class MarketMaker1 extends VolumeTracker implements OrdersListener, Posit
     protected void init(Api api) {
         this.api = api;
         volumeCounter = new VolumeCounter(interval, VolumeCounterType.EXPONENTIAL);
-        indicatorBid = api.registerIndicator("MM Buy", GraphType.PRIMARY, Color.GREEN);
-        indicatorAsk = api.registerIndicator("MM Sell", GraphType.PRIMARY, Color.RED);
+        indicatorBid = api.registerIndicator("MM Buy", GraphType.PRIMARY);
+        indicatorBid.setColor(Color.GREEN);
+        indicatorAsk = api.registerIndicator("MM Sell", GraphType.PRIMARY);
+        indicatorAsk.setColor(Color.RED);
     }
 
     @Override

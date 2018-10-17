@@ -36,7 +36,8 @@ public class AbsorptionIndicator implements CustomModule, BarDataListener {
 
     @Override
     public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
-        line1 = api.registerIndicator("Absorption", GraphType.BOTTOM, Color.PINK);
+        line1 = api.registerIndicator("Absorption", GraphType.BOTTOM, 0);
+        line1.setColor(Color.PINK);
     }
 
     @Override
@@ -57,12 +58,12 @@ public class AbsorptionIndicator implements CustomModule, BarDataListener {
     }
 
     @Override
-    public long getBarInterval() {
-        return barInterval;
+    public void stop() {
     }
 
     @Override
-    public void stop() {
+    public long getInterval() {
+        return barInterval;
     }
 
 }

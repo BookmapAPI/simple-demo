@@ -6,6 +6,7 @@ import java.awt.event.ActionListener;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.function.Consumer;
 
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -19,20 +20,17 @@ import velox.api.layer1.annotations.Layer1StrategyName;
 import velox.api.layer1.common.Log;
 import velox.api.layer1.data.InstrumentInfo;
 import velox.api.layer1.data.TradeInfo;
-import velox.api.layer1.layers.utils.OrderBook;
-import velox.api.layer1.messages.indicators.IndicatorColorInterface;
 import velox.api.layer1.messages.indicators.Layer1ApiUserMessageModifyIndicator.GraphType;
 import velox.api.layer1.simplified.Api;
 import velox.api.layer1.simplified.Bar;
-import velox.api.layer1.simplified.BarDataListener;
 import velox.api.layer1.simplified.CustomModule;
 import velox.api.layer1.simplified.CustomSettingsPanelProvider;
 import velox.api.layer1.simplified.Indicator;
 import velox.api.layer1.simplified.InitialState;
+import velox.api.layer1.simplified.IntervalListener;
 import velox.api.layer1.simplified.Intervals;
 import velox.api.layer1.simplified.TimeListener;
 import velox.api.layer1.simplified.TradeDataListener;
-import velox.colors.ColorsChangedListener;
 import velox.gui.StrategyPanel;
 import velox.gui.colors.ColorsConfigItem;
 
@@ -40,7 +38,7 @@ import velox.gui.colors.ColorsConfigItem;
 @Layer1StrategyName("ATR Trailing Stop")
 @Layer1ApiVersion(Layer1ApiVersionValue.VERSION1)
 public class AtrTrailingStop
-        implements CustomModule, TradeDataListener, BarDataListener, TimeListener, CustomSettingsPanelProvider {
+        implements CustomModule, TradeDataListener, IntervalListener, TimeListener, CustomSettingsPanelProvider {
 
     private static enum Trend {
         Up, Down, Undefined
@@ -78,9 +76,10 @@ public class AtrTrailingStop
 
     @Override
     public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
-        Log.info("initialize colors " + colorBuy + "; " + colorSell);
-        lineBuy = api.registerIndicator("ATR TS Buy", GraphType.PRIMARY, colorBuy);
-        lineSell = api.registerIndicator("ATR TS Sell", GraphType.PRIMARY, colorSell);
+        lineBuy = api.registerIndicator("ATR TS Buy", GraphType.PRIMARY);
+        lineBuy.setColor(colorBuy);
+        lineSell = api.registerIndicator("ATR TS Sell", GraphType.PRIMARY);
+        lineSell.setColor(colorSell);
     }
 
     @Override
@@ -89,12 +88,12 @@ public class AtrTrailingStop
     }
 
     @Override
-    public long getBarInterval() {
+    public long getInterval() {
         return barPeriod;
     }
 
     @Override
-    public void onBar(OrderBook orderBook, Bar barExt) {
+    public void onInterval() {
         tr = multiplier * (bar.getHigh() - bar.getLow());
         atr = ((atrNumBars - 1) * atr + tr) / atrNumBars;
         onBarUpdate(bar);
@@ -185,21 +184,28 @@ public class AtrTrailingStop
         }
     }
 
-    private void updateColor(boolean isBuy, Color color) {
-        if (isBuy) {
-            colorBuy = color;
-        } else {
-            colorSell = color;
-        }
-    }
-
     private StrategyPanel getColorsSettingsPanel() {
         BookmapSettingsPanel panel = new BookmapSettingsPanel("Colors");
-        panel.add(new ColorsConfigItem("Buy Trailing Stop:", defaultColorBuy, buildColorInterface(true),
-                () -> Log.info("Colors were changed")));
-        panel.add(new ColorsConfigItem("Sell Trailing Stop:", defaultColorSell, buildColorInterface(false),
-                () -> Log.info("Colors were changed")));
+        panel.addSettingsItem("Buy Trailing Stop:", createColorsConfigItem(true));
+        panel.addSettingsItem("Sell Trailing Stop:", createColorsConfigItem(false));
         return panel;
+    }
+
+    private ColorsConfigItem createColorsConfigItem(boolean isBuy) {
+        Consumer<Color> c = new Consumer<Color>() {
+
+            @Override
+            public void accept(Color color) {
+                if (isBuy) {
+                    colorBuy = color;
+                    lineBuy.setColor(colorBuy);
+                } else {
+                    colorSell = color;
+                    lineSell.setColor(colorSell);
+                }
+            }
+        };
+        return new ColorsConfigItem(isBuy ? colorBuy : colorSell, isBuy ? defaultColorBuy : defaultColorSell, c);
     }
 
     private StrategyPanel getLineStyleSettingsPanel() {
@@ -208,7 +214,7 @@ public class AtrTrailingStop
         addLineWidthSettings(panel);
         return panel;
     }
-    
+
     private void addLineTypeSettings(final BookmapSettingsPanel panel) {
         JComboBox<String> c = new JComboBox<>(new String[] { "SOLID", "DASH", "DOT", "DASHDOT" }); // TODO: Actions
         panel.addSettingsItem("Line type:", c);
@@ -230,7 +236,7 @@ public class AtrTrailingStop
     private void addMultiplierSettings(final BookmapSettingsPanel panel) {
         JComboBox<Double> c = new JComboBox<>(new Double[] { 0.5, 0.75, 1.0, 1.5, 2.0, 3.5, 5.0, 7.5, 10.0 });
         c.setSelectedItem(multiplier);
-        c.setEditable(true);
+        c.setEditable(false);
         c.addActionListener(new ActionListener() {
 
             @Override
@@ -251,7 +257,7 @@ public class AtrTrailingStop
                 new Integer[] { 1, 2, 3, 5, 10, 15, 30, 60, 120, 180, 300, 600, 900, 1800, 3600 });
         int selected = (int) (barPeriod / 1_000_000_000L);
         c.setSelectedItem(selected);
-        c.setEditable(true);
+        c.setEditable(false);
         c.addActionListener(new ActionListener() {
 
             @Override
@@ -269,7 +275,7 @@ public class AtrTrailingStop
     private void addAtrNumBars(final BookmapSettingsPanel panel) {
         JComboBox<Integer> c = new JComboBox<>(new Integer[] { 5, 10, 20, 50, 100 });
         c.setSelectedItem(atrNumBars);
-        c.setEditable(true);
+        c.setEditable(false);
         c.addActionListener(new ActionListener() {
 
             @Override
@@ -306,29 +312,4 @@ public class AtrTrailingStop
         labelTr.setText(String.format("%.3f", tr));
         labelAtr.setText(String.format("%.3f", atr));
     }
-
-    private IndicatorColorInterface buildColorInterface(boolean isBuy) {
-        IndicatorColorInterface colorInterface = new IndicatorColorInterface() {
-
-            @Override
-            public void set(String name, Color color) {
-                updateColor(isBuy, color);
-                Log.info("set color " + color);
-            }
-
-            @Override
-            public Color getOrDefault(String name, Color defaultValue) {
-                Log.info("get color ");
-                return isBuy ? colorBuy : colorSell;
-            }
-
-            @Override
-            public void addColorChangeListener(ColorsChangedListener listener) {
-                // This isn't needed unless custom module itself changing the colors after the
-                // panel is shown
-            }
-        };
-        return colorInterface;
-    }
-
 }
