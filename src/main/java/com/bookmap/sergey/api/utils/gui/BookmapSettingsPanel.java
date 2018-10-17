@@ -1,15 +1,15 @@
-package com.bookmap.sergey.custommodules.guiutils;
+package com.bookmap.sergey.api.utils.gui;
 
 import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.util.Random;
 
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JTextField;
 
 import velox.gui.StrategyPanel;
 
@@ -66,7 +66,7 @@ public class BookmapSettingsPanel extends StrategyPanel {
         add(c, constraints);
     }
 
-    public static void main(String[] args) {
+    protected static void testSettingsPanel() {
         BookmapSettingsPanel panel = new BookmapSettingsPanel("Settings");
         panel.addSettingsItem(new JLabel("short label"));
         for (int i = 0; i < 8; i++) {
@@ -86,5 +86,29 @@ public class BookmapSettingsPanel extends StrategyPanel {
         frame.getContentPane().add(panel);
         frame.pack();
         frame.setVisible(true);
+    }
+    
+    protected static void testExp() {
+        int n = 100;
+        double[] data = new double[n * 100];
+        Random r = new Random();
+        for (int i = 0; i < data.length; i++) {
+            data[i] = r.nextDouble();
+        }
+        double s1 = 0;
+        for (int i = 0; i < n; i++) {
+            s1 += data[i]; 
+        }
+        double s2 = 0;
+        for (int i = 0; i < data.length; i++) {
+            s2 += data[i] * Math.exp(-i * Math.log(2) / n);
+        }
+        s2 *= Math.log(2);
+        System.out.println(String.format("sum: %.4f, exp: %.4f", s1, s2));
+    }
+    
+    public static void main(String[] args) {
+        //testSettingsPanel();
+        testExp();
     }
 }

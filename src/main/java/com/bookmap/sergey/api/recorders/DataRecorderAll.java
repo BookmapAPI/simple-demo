@@ -1,4 +1,4 @@
-package com.bookmap.sergey.custommodules;
+package com.bookmap.sergey.api.recorders;
 
 import java.util.HashMap;
 
@@ -8,6 +8,7 @@ import velox.api.layer1.annotations.Layer1SimpleAttachable;
 import velox.api.layer1.annotations.Layer1StrategyName;
 import velox.api.layer1.data.InstrumentInfo;
 import velox.api.layer1.simplified.Api;
+import velox.api.layer1.simplified.InitialState;
 import velox.api.layer1.simplified.MultiInstrumentListener;
 
 @Layer1SimpleAttachable
@@ -20,7 +21,7 @@ public class DataRecorderAll extends DataRecorder implements MultiInstrumentList
     String[] filter = new String[] { "ES", "CL" };
 
     @Override
-    public void initialize(String alias, InstrumentInfo info, Api api) {
+    public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
     }
 
     @Override

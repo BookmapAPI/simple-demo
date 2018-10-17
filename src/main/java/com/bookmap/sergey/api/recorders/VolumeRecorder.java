@@ -1,4 +1,4 @@
-package com.bookmap.sergey.custommodules;
+package com.bookmap.sergey.api.recorders;
 
 import velox.api.layer1.annotations.Layer1ApiVersion;
 import velox.api.layer1.annotations.Layer1ApiVersionValue;
@@ -10,6 +10,7 @@ import velox.api.layer1.simplified.Api;
 import velox.api.layer1.simplified.Bar;
 import velox.api.layer1.simplified.BarDataListener;
 import velox.api.layer1.simplified.CustomModule;
+import velox.api.layer1.simplified.InitialState;
 import velox.api.layer1.simplified.Intervals;
 
 @Layer1SimpleAttachable
@@ -28,7 +29,7 @@ public class VolumeRecorder extends DataRecorderBase implements CustomModule, Ba
     }
 
     @Override
-    public void initialize(String alias, InstrumentInfo info, Api api) {
+    public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
     }
 
     @Override

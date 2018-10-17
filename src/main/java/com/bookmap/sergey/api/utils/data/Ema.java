@@ -1,4 +1,4 @@
-package com.bookmap.sergey.custommodules.utils;
+package com.bookmap.sergey.api.utils.data;
 
 public class Ema {
     private double value = 0;

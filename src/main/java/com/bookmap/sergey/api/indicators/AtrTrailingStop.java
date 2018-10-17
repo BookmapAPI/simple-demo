@@ -1,4 +1,4 @@
-package com.bookmap.sergey.custommodules;
+package com.bookmap.sergey.api.indicators;
 
 import java.awt.Color;
 import java.awt.event.ActionEvent;
@@ -10,7 +10,7 @@ import java.util.TimeZone;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 
-import com.bookmap.sergey.custommodules.guiutils.SettingsPanelBase;
+import com.bookmap.sergey.api.utils.gui.BookmapSettingsPanel;
 
 import velox.api.layer1.annotations.Layer1ApiVersion;
 import velox.api.layer1.annotations.Layer1ApiVersionValue;
@@ -28,6 +28,7 @@ import velox.api.layer1.simplified.BarDataListener;
 import velox.api.layer1.simplified.CustomModule;
 import velox.api.layer1.simplified.CustomSettingsPanelProvider;
 import velox.api.layer1.simplified.Indicator;
+import velox.api.layer1.simplified.InitialState;
 import velox.api.layer1.simplified.Intervals;
 import velox.api.layer1.simplified.TimeListener;
 import velox.api.layer1.simplified.TradeDataListener;
@@ -54,8 +55,8 @@ public class AtrTrailingStop
     private double sellPrice = Double.NaN;
     private double lastTradePrice = Double.NaN;
 
-    private final static Color defaultColorBuy = Color.WHITE;
-    private final static Color defaultColorSell = Color.WHITE;
+    private final static Color defaultColorBuy = Color.PINK;
+    private final static Color defaultColorSell = Color.PINK;
     private final static double defaultMultiplier = 1.5;
     private final static double defaultTr = 5;
     private final static double defaultAtr = defaultTr;
@@ -76,7 +77,7 @@ public class AtrTrailingStop
     private long currentTimeNanoseconds;
 
     @Override
-    public void initialize(String alias, InstrumentInfo info, Api api) {
+    public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
         Log.info("initialize colors " + colorBuy + "; " + colorSell);
         lineBuy = api.registerIndicator("ATR TS Buy", GraphType.PRIMARY, colorBuy);
         lineSell = api.registerIndicator("ATR TS Sell", GraphType.PRIMARY, colorSell);
@@ -193,7 +194,7 @@ public class AtrTrailingStop
     }
 
     private StrategyPanel getColorsSettingsPanel() {
-        SettingsPanelBase panel = new SettingsPanelBase("Colors");
+        BookmapSettingsPanel panel = new BookmapSettingsPanel("Colors");
         panel.add(new ColorsConfigItem("Buy Trailing Stop:", defaultColorBuy, buildColorInterface(true),
                 () -> Log.info("Colors were changed")));
         panel.add(new ColorsConfigItem("Sell Trailing Stop:", defaultColorSell, buildColorInterface(false),
@@ -202,31 +203,31 @@ public class AtrTrailingStop
     }
 
     private StrategyPanel getLineStyleSettingsPanel() {
-        SettingsPanelBase panel = new SettingsPanelBase("Lines style");
+        BookmapSettingsPanel panel = new BookmapSettingsPanel("Lines style");
         addLineTypeSettings(panel);
         addLineWidthSettings(panel);
         return panel;
     }
     
-    private void addLineTypeSettings(final SettingsPanelBase panel) {
+    private void addLineTypeSettings(final BookmapSettingsPanel panel) {
         JComboBox<String> c = new JComboBox<>(new String[] { "SOLID", "DASH", "DOT", "DASHDOT" }); // TODO: Actions
-        panel.addSettingsRow("Line type:", c);
+        panel.addSettingsItem("Line type:", c);
     }
 
-    private void addLineWidthSettings(final SettingsPanelBase panel) {
+    private void addLineWidthSettings(final BookmapSettingsPanel panel) {
         JComboBox<Integer> c = new JComboBox<>(new Integer[] { 1, 2, 3, 4, 5 }); // TODO: Actions
-        panel.addSettingsRow("Line width:", c);
+        panel.addSettingsItem("Line width:", c);
     }
 
     private StrategyPanel getParametersSettingsPanel() {
-        SettingsPanelBase panel = new SettingsPanelBase("Settings");
+        BookmapSettingsPanel panel = new BookmapSettingsPanel("Settings");
         addMultiplierSettings(panel);
         addBarPeriodSettings(panel);
         addAtrNumBars(panel);
         return panel;
     }
 
-    private void addMultiplierSettings(final SettingsPanelBase panel) {
+    private void addMultiplierSettings(final BookmapSettingsPanel panel) {
         JComboBox<Double> c = new JComboBox<>(new Double[] { 0.5, 0.75, 1.0, 1.5, 2.0, 3.5, 5.0, 7.5, 10.0 });
         c.setSelectedItem(multiplier);
         c.setEditable(true);
@@ -242,10 +243,10 @@ public class AtrTrailingStop
                 }
             }
         });
-        panel.addSettingsRow("Multiplier:", c);
+        panel.addSettingsItem("Multiplier:", c);
     }
 
-    private void addBarPeriodSettings(final SettingsPanelBase panel) {
+    private void addBarPeriodSettings(final BookmapSettingsPanel panel) {
         JComboBox<Integer> c = new JComboBox<>(
                 new Integer[] { 1, 2, 3, 5, 10, 15, 30, 60, 120, 180, 300, 600, 900, 1800, 3600 });
         int selected = (int) (barPeriod / 1_000_000_000L);
@@ -262,10 +263,10 @@ public class AtrTrailingStop
                 }
             }
         });
-        panel.addSettingsRow("Bar period [seconds]:", c);
+        panel.addSettingsItem("Bar period [seconds]:", c);
     }
 
-    private void addAtrNumBars(final SettingsPanelBase panel) {
+    private void addAtrNumBars(final BookmapSettingsPanel panel) {
         JComboBox<Integer> c = new JComboBox<>(new Integer[] { 5, 10, 20, 50, 100 });
         c.setSelectedItem(atrNumBars);
         c.setEditable(true);
@@ -280,14 +281,14 @@ public class AtrTrailingStop
                 }
             }
         });
-        panel.addSettingsRow("Number of Bars:", c);
+        panel.addSettingsItem("Number of Bars:", c);
     }
 
-    private SettingsPanelBase getStatisticsPanel() {
-        SettingsPanelBase panel = new SettingsPanelBase("Current values");
+    private BookmapSettingsPanel getStatisticsPanel() {
+        BookmapSettingsPanel panel = new BookmapSettingsPanel("Current values");
         onAtrUpdate();
-        panel.addSettingsRow("Last True Range (multiplied) [ticks]:", labelTr);
-        panel.addSettingsRow("Average True Range [ticks]:", labelAtr);
+        panel.addSettingsItem("Last True Range (multiplied) [ticks]:", labelTr);
+        panel.addSettingsItem("Average True Range [ticks]:", labelAtr);
         return panel;
     }
 

@@ -1,9 +1,12 @@
-package com.bookmap.sergey.custommodules;
+package com.bookmap.sergey.api.recorders;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 public abstract class DataRecorderBase {
@@ -22,11 +25,20 @@ public abstract class DataRecorderBase {
     public void stop() {
         try {
             writer.close();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
+    
+    public static String getDateTime(long nanoseconds) {
+        long millis = nanoseconds / 1_000_000L;
+        long nanos = nanoseconds - 1_000_000L * millis;
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd HH:mm:ss.SSS");
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+        String datetime = sdf.format(new Date(millis)) + String.format("%06d", nanos);
+        return datetime;
+    }
+    
     protected void writeObjects(Object... objects) {
         builder.setLength(0);
         appendFirst(builder);

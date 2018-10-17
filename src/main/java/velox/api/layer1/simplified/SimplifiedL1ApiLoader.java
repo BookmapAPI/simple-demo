@@ -1,6 +1,7 @@
 package velox.api.layer1.simplified;
 
 import java.awt.Color;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -354,6 +355,8 @@ public class SimplifiedL1ApiLoader<T extends CustomModule> extends Layer1ApiInje
     }
     
     private class InstanceWrapper implements Api {
+        private static final String DIRECT_SETTINGS_POSTFIX = ".direct";
+        
         private final CustomModule instance;
         private final String alias;
         
@@ -372,6 +375,7 @@ public class SimplifiedL1ApiLoader<T extends CustomModule> extends Layer1ApiInje
         private final List<MultiInstrumentListener> multiInstrumentListeners = new ArrayList<>();
         
         private boolean initializing;
+        private boolean stopped;
         
         /** Generator time while generator is active, last time message otherwise */
         private long time = 0;
@@ -406,8 +410,11 @@ public class SimplifiedL1ApiLoader<T extends CustomModule> extends Layer1ApiInje
         }
 
         public void start() {
+            InitialState initialState = initialStates.computeIfAbsent(alias,
+                    k -> new InitialState());
+
             initializing = true;
-            instance.initialize(alias, instruments.get(alias), this);
+            instance.initialize(alias, instruments.get(alias), this, initialState);
             initializing = false;
             
             addListener(instance);
@@ -418,6 +425,11 @@ public class SimplifiedL1ApiLoader<T extends CustomModule> extends Layer1ApiInje
                 provider.sendUserMessage(generatorMessage);
             } else {
                 sendSnapshots();
+            }
+            
+            Runnable invalidatePannelsFunction = invalidatePannelsFunctions.get(alias);
+            if (invalidatePannelsFunction != null) {
+                invalidatePannelsFunction.run();
             }
         }
 
@@ -462,11 +474,20 @@ public class SimplifiedL1ApiLoader<T extends CustomModule> extends Layer1ApiInje
             sendingSnapshots = false;
         }
 
-        public void stop() {
+        public void stop(boolean invalidatePanels) {
+            stopped = true;
+            
             instance.stop();
             indicators.forEach(IndicatorImplementation::remove);
             Layer1ApiUserMessageAddStrategyUpdateGenerator generatorMessage = getGeneratorMessage(false, alias, this);
             provider.sendUserMessage(generatorMessage);
+            
+            if (invalidatePanels) {
+                Runnable invalidatePannelsFunction = invalidatePannelsFunctions.get(alias);
+                if (invalidatePannelsFunction != null) {
+                    invalidatePannelsFunction.run();
+                }
+            }
         }
 
         public void addListener(Object simplifiedListener) {
@@ -787,14 +808,45 @@ public class SimplifiedL1ApiLoader<T extends CustomModule> extends Layer1ApiInje
         public void updateOrder(OrderUpdateParameters orderUpdateParameters) {
             SimplifiedL1ApiLoader.this.updateOrder(orderUpdateParameters);
         }
+        
+        @SuppressWarnings("unchecked")
+        @Override
+        public <ST> ST getSettings(Class<? extends ST> settingsClass) {
+            return (ST) settingsAccess.getSettings(alias, simpleStrategyClass.getCanonicalName() + DIRECT_SETTINGS_POSTFIX, settingsClass);
+        }
+        
+        @Override
+        public <ST> void setSettings(ST settingsObject) {
+            settingsAccess.setSettings(alias, simpleStrategyClass.getCanonicalName() + DIRECT_SETTINGS_POSTFIX,
+                    settingsObject, settingsObject.getClass());
+        }
+
+        @Override
+        public void reload() {
+            if (!stopped) {
+                stopped = true;
+                inject(() -> {
+                    stopForInstrument(alias, false);
+                    startForInstrument(alias);
+                });
+            }
+        }
+
+        public StrategyPanel[] getCustomSettingsPanels() {
+            StrategyPanel[] panels = ((CustomSettingsPanelProvider)instance).getCustomSettingsPanels();
+            return panels;
+        }
     }
     
     private final Layer1ApiRequestCurrentTimeEvents requestCurrentTimeEventsMessage = new Layer1ApiRequestCurrentTimeEvents(true, 0,
             TimeUnit.MILLISECONDS.toNanos(50));
     
     private DataStructureInterface dataStructureInterface;
+    private SettingsAccess settingsAccess;
     private Class<T> simpleStrategyClass;
     private Map<String, InstanceWrapper> instanceWrappers = new ConcurrentHashMap<>();
+    /** Can be called to invalidate settings panels if those are still visible */
+    private  Map<String, Runnable> invalidatePannelsFunctions = new ConcurrentHashMap<>();
     
     private final Mode mode;
     private final boolean multiInstrument;
@@ -806,13 +858,13 @@ public class SimplifiedL1ApiLoader<T extends CustomModule> extends Layer1ApiInje
     private Map<String, OrderInfoUpdate> orders = new ConcurrentHashMap<>();
     private Map<String, StatusInfo> statuses = new ConcurrentHashMap<>();
     private BalanceInfo balance;
+    /** Data passed into initialization  */
+    private Map<String, InitialState> initialStates = new ConcurrentHashMap<>();
     
     // TODO: replace with settings
     private HashSet<String> enabledAliases = new HashSet<>();
     
     private HashMap<Pair<String, String>, Color> defaultColors = new HashMap<>();
-    // TODO: replace with settings
-    private HashMap<Pair<String, String>, Color> colors = new HashMap<>();
     
     public SimplifiedL1ApiLoader(Layer1ApiProvider provider, Class<T> clazz) {
         super(provider);
@@ -827,7 +879,7 @@ public class SimplifiedL1ApiLoader<T extends CustomModule> extends Layer1ApiInje
     @Override
     public void finish() {
         // Unload indicators, clear invalidate interfaces
-        instanceWrappers.keySet().forEach(alias -> stopForInstrument(alias));
+        instanceWrappers.keySet().forEach(alias -> stopForInstrument(alias, false));
         
         requestCurrentTimeEventsMessage.setAdd(false);
         provider.sendUserMessage(requestCurrentTimeEventsMessage);
@@ -835,13 +887,12 @@ public class SimplifiedL1ApiLoader<T extends CustomModule> extends Layer1ApiInje
 
     @Override
     public void setColor(String alias, String name, Color color) {
-        colors.put(new ImmutablePair<String, String>(alias, name), color);
+        throw new UnsupportedOperationException("Setting color not supported");
     }
 
     @Override
     public Color getColor(String alias, String name) {
-        return colors.computeIfAbsent(new ImmutablePair<String, String>(alias, name),
-                k -> defaultColors.get(k));
+        return defaultColors.get(new ImmutablePair<String, String>(alias, name));
     }
 
     @Override
@@ -852,18 +903,34 @@ public class SimplifiedL1ApiLoader<T extends CustomModule> extends Layer1ApiInje
 
     @Override
     public void acceptSettingsInterface(SettingsAccess settingsAccess) {
-        // Not working with settings yet
+        this.settingsAccess = settingsAccess;
     }
 
     @Override
     public StrategyPanel[] getCustomGuiFor(String alias, String indicatorName) {
         
+        StrategyPanel[] panels = new StrategyPanel[0];
+        
         InstanceWrapper instanceWrapper = instanceWrappers.get(alias);
         if (instanceWrapper != null && instanceWrapper.instance instanceof CustomSettingsPanelProvider) {
-            return ((CustomSettingsPanelProvider)instanceWrapper.instance).getCustomSettingsPanels();
+            panels = instanceWrapper.getCustomSettingsPanels();
         }
         
-        return new StrategyPanel[] {new StrategyPanel("No settings yet")};
+        if (panels.length == 0) {
+            panels = new StrategyPanel[] { new StrategyPanel("Please enable the module to configure") };
+        }
+        
+        if (panels.length > 0) {
+            WeakReference<StrategyPanel> firstPanelReference = new WeakReference<StrategyPanel>(panels[0]);
+            invalidatePannelsFunctions.put(alias, () -> {
+                StrategyPanel strategyPanel = firstPanelReference.get();
+                if (strategyPanel != null) {
+                    strategyPanel.requestReload();
+                }
+            });
+        }
+        
+        return panels;
     }
 
     @Override
@@ -879,7 +946,7 @@ public class SimplifiedL1ApiLoader<T extends CustomModule> extends Layer1ApiInje
                     }
                     enabledAliases.add(alias);
                 } else {
-                    stopForInstrument(alias);
+                    stopForInstrument(alias, false);
                     enabledAliases.remove(alias);
                 }
             } catch (Exception e) {
@@ -904,8 +971,8 @@ public class SimplifiedL1ApiLoader<T extends CustomModule> extends Layer1ApiInje
         instanceWrapper.start();
     }
     
-    private void stopForInstrument(String alias) {
-        instanceWrappers.remove(alias).stop();
+    private void stopForInstrument(String alias, boolean invalidatePanels) {
+        instanceWrappers.remove(alias).stop(invalidatePanels);
     }
 
     @Override
@@ -945,7 +1012,7 @@ public class SimplifiedL1ApiLoader<T extends CustomModule> extends Layer1ApiInje
         } else if (data instanceof UserMessageRewindBase) {
             if (mode == Mode.LIVE || mode == Mode.MIXED) {
                 Map<String, InstrumentInfo> instrumentsCopy = new HashMap<>(instruments);
-                instrumentsCopy.keySet().forEach(this::removeInstrument);
+                instrumentsCopy.keySet().forEach(alias -> removeInstrument(alias, false));
                 UserMessageRewindBase rewindMessage = (UserMessageRewindBase) data;
                 for (Entry<String, OrderBook> entry: rewindMessage.aliasToOrderBooksMap.entrySet()) {
                     String alias = entry.getKey();
@@ -1129,13 +1196,13 @@ public class SimplifiedL1ApiLoader<T extends CustomModule> extends Layer1ApiInje
     @Override
     public void onInstrumentRemoved(String alias) {
         super.onInstrumentRemoved(alias);
-        removeInstrument(alias);
+        removeInstrument(alias, true);
     }
 
-    private void removeInstrument(String alias) {
+    private void removeInstrument(String alias, boolean invalidatePanels) {
         
         if (enabledAliases.contains(alias)) {
-            stopForInstrument(alias);
+            stopForInstrument(alias, invalidatePanels);
         }
         instruments.remove(alias);
         orderBooks.remove(alias);
@@ -1165,6 +1232,17 @@ public class SimplifiedL1ApiLoader<T extends CustomModule> extends Layer1ApiInje
     @Override
     public void onTrade(String alias, double price, int size, TradeInfo tradeInfo) {
         super.onTrade(alias, price, size, tradeInfo);
+        
+        if (mode == Mode.LIVE && size != 0) {
+            InitialState initialState = initialStates.get(alias);
+            if (initialState == null) {
+                initialState = new InitialState();
+                initialStates.put(alias, initialState);
+            }
+            initialState.isLastTradeBid = tradeInfo.isBidAggressor;
+            initialState.lastTradePrice = price;
+            initialState.lastTradeSize = size;
+        }
         
         if (multiInstrument) {
             for (InstanceWrapper instanceWrapper : instanceWrappers.values()) {

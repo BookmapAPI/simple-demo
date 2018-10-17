@@ -1,6 +1,6 @@
-package com.bookmap.sergey.custommodules;
+package com.bookmap.sergey.api.recorders;
 
-import com.bookmap.sergey.custommodules.utils.EmaBars;
+import com.bookmap.sergey.api.utils.data.EmaBars;
 
 import velox.api.layer1.annotations.Layer1ApiVersion;
 import velox.api.layer1.annotations.Layer1ApiVersionValue;
@@ -12,6 +12,7 @@ import velox.api.layer1.simplified.Api;
 import velox.api.layer1.simplified.Bar;
 import velox.api.layer1.simplified.BarDataListener;
 import velox.api.layer1.simplified.CustomModule;
+import velox.api.layer1.simplified.InitialState;
 import velox.api.layer1.simplified.Intervals;
 
 @Layer1SimpleAttachable
@@ -24,7 +25,7 @@ public class VolumeRecorderEma extends DataRecorderBase implements CustomModule,
     private Object[] output = new Object[2 * halfLifeBars.length];
 
     @Override
-    public void initialize(String alias, InstrumentInfo info, Api api) {
+    public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
         for (int i = 0; i < halfLifeBars.length; i++) {
             emaBuy[i] = new EmaBars(halfLifeBars[i]);
             emaSell[i] = new EmaBars(halfLifeBars[i]);

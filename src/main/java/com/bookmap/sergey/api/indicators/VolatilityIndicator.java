@@ -1,14 +1,14 @@
-package com.bookmap.sergey.custommodules;
+package com.bookmap.sergey.api.indicators;
 
 import java.awt.Color;
 
-import com.bookmap.sergey.custommodules.utils.SlidingVolumeHandler;
+import com.bookmap.sergey.api.utils.data.VolumeCounter;
+import com.bookmap.sergey.api.utils.data.VolumeCounter.VolumeCounterType;
 
 import velox.api.layer1.annotations.Layer1ApiVersion;
 import velox.api.layer1.annotations.Layer1ApiVersionValue;
 import velox.api.layer1.annotations.Layer1SimpleAttachable;
 import velox.api.layer1.annotations.Layer1StrategyName;
-
 import velox.api.layer1.data.TradeInfo;
 import velox.api.layer1.messages.indicators.Layer1ApiUserMessageModifyIndicator.GraphType;
 import velox.api.layer1.simplified.Api;
@@ -19,16 +19,16 @@ import velox.api.layer1.simplified.TradeDataListener;
 @Layer1SimpleAttachable
 @Layer1StrategyName("Volatility Indicator")
 @Layer1ApiVersion(Layer1ApiVersionValue.VERSION1)
-public class VolatilityIndicator extends LiquidityTracker implements TradeDataListener, TimeListener {
+public class VolatilityIndicator extends LiquidityTrackerExponential implements TradeDataListener, TimeListener {
 
-    private final long volumeInterval = Intervals.INTERVAL_1_MINUTE;
+    private final long volumeInterval = Intervals.INTERVAL_10_MINUTES;
     private final int displayFactor = 100;
-    final SlidingVolumeHandler volume = new SlidingVolumeHandler(volumeInterval);
+    final VolumeCounter volume = new VolumeCounter(volumeInterval, VolumeCounterType.MOVING_SUM);
     private long nanoseconds;
 
-    protected void initLines(Api api) {
-        line1 = api.registerIndicator("Volatility Absolute", GraphType.BOTTOM, Color.WHITE);
-        line2 = api.registerIndicator("Volatility Directional", GraphType.BOTTOM, Color.BLUE);
+    protected void registerIndicators(Api api) {
+        indicatorBid = api.registerIndicator("Volatility Absolute", GraphType.BOTTOM, Color.WHITE);
+        indicatorAsk = api.registerIndicator("Volatility Directional", GraphType.BOTTOM, Color.BLUE);
     }
 
     @Override
@@ -41,21 +41,22 @@ public class VolatilityIndicator extends LiquidityTracker implements TradeDataLi
         volume.onTrade(nanoseconds, tradeInfo.isBidAggressor, size);
     }
 
-    protected void onUpdate() {
-        double bidSize = book.getExponentiallyWeightedAverage(true);
-        double askSize = book.getExponentiallyWeightedAverage(false);
+    @Override
+    protected void onBarTemp() {
+        double bidSize = orderBook.getSizeSum(true);
+        double askSize = orderBook.getSizeSum(false);
         if (bidSize == 0 || askSize == 0) {
             return;
         }
-        int volumeBuy = volume.getVolume(nanoseconds, true);
-        int volumeSell = volume.getVolume(nanoseconds, false);
+        double volumeBuy = volume.getVolume(nanoseconds, true);
+        double volumeSell = volume.getVolume(nanoseconds, false);
         double absVolatility = displayFactor * (volumeBuy + volumeSell) / (bidSize + askSize);
-        line1.addPoint(absVolatility);
+        indicatorBid.addPoint(absVolatility);
 
         double dirBuy = volumeBuy / askSize;
         double dirSell = volumeSell / bidSize;
         double directionalVolatility = displayFactor * (dirBuy - dirSell) / (dirBuy + dirSell);
-        line2.addPoint(directionalVolatility);
+        indicatorAsk.addPoint(directionalVolatility);
     }
 
 }

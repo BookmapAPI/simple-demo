@@ -1,8 +1,8 @@
-package com.bookmap.sergey.custommodules;
+package com.bookmap.sergey.api.indicators;
 
 import java.awt.Color;
 
-import com.bookmap.sergey.custommodules.utils.OrderBookBase;
+import com.bookmap.sergey.api.utils.data.OrderBookBase;
 
 import velox.api.layer1.annotations.Layer1ApiVersion;
 import velox.api.layer1.annotations.Layer1ApiVersionValue;
@@ -17,6 +17,7 @@ import velox.api.layer1.simplified.BarDataListener;
 import velox.api.layer1.simplified.CustomModule;
 import velox.api.layer1.simplified.DepthDataListener;
 import velox.api.layer1.simplified.Indicator;
+import velox.api.layer1.simplified.InitialState;
 import velox.api.layer1.simplified.Intervals;
 import velox.api.layer1.simplified.SnapshotEndListener;
 
@@ -33,7 +34,7 @@ public class QuotesDelta implements CustomModule, BarDataListener, DepthDataList
     private Indicator line1;
 
     @Override
-    public void initialize(String alias, InstrumentInfo info, Api api) {
+    public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
         line1 = api.registerIndicator("Quotes Delta", GraphType.BOTTOM, Color.ORANGE);
     }
 

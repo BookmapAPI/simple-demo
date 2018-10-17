@@ -28,11 +28,11 @@ public class Bar {
     public Bar(double openPrice) {
         initPrice(openPrice);
     }
-    
+
     public Bar() {
         this(Double.NaN);
     }
-    
+
     private void initPrice(double openPrice) {
         open = close = high = low = openPrice;
     }
@@ -54,7 +54,7 @@ public class Bar {
             volumePremultipliedPriceSell += volume * price;
         }
     }
-    
+
     /** Set open/close prices to previous close price, clear other fields */
     public void startNext() {
         initPrice(close);

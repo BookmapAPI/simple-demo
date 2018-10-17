@@ -1,4 +1,4 @@
-package com.bookmap.sergey.custommodules;
+package com.bookmap.sergey.api.recorders;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -13,6 +13,7 @@ import velox.api.layer1.simplified.Api;
 import velox.api.layer1.simplified.BboListener;
 import velox.api.layer1.simplified.CustomModule;
 import velox.api.layer1.simplified.DepthDataListener;
+import velox.api.layer1.simplified.InitialState;
 import velox.api.layer1.simplified.TimeListener;
 import velox.api.layer1.simplified.TradeDataListener;
 
@@ -26,7 +27,7 @@ public class DataRecorder extends DataRecorderBase
     SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd HH:mm:ss.SSS");
 
     @Override
-    public void initialize(String alias, InstrumentInfo info, Api api) {
+    public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
         addInstrument(alias, info);
     }
 

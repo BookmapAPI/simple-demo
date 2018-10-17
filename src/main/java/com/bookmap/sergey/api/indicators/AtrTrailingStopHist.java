@@ -1,4 +1,4 @@
-package com.bookmap.sergey.custommodules;
+package com.bookmap.sergey.api.indicators;
 
 import velox.api.layer1.annotations.Layer1ApiVersion;
 import velox.api.layer1.annotations.Layer1ApiVersionValue;
