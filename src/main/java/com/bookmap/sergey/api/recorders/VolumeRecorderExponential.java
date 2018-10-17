@@ -1,6 +1,6 @@
 package com.bookmap.sergey.api.recorders;
 
-import com.bookmap.sergey.api.utils.data.EmaBars;
+import com.bookmap.sergey.api.utils.data.ExponentialSumBars;
 
 import velox.api.layer1.annotations.Layer1ApiVersion;
 import velox.api.layer1.annotations.Layer1ApiVersionValue;
@@ -16,19 +16,19 @@ import velox.api.layer1.simplified.InitialState;
 import velox.api.layer1.simplified.Intervals;
 
 @Layer1SimpleAttachable
-@Layer1StrategyName("Volume Recorder Ema")
+@Layer1StrategyName("Volume Recorder Exponential")
 @Layer1ApiVersion(Layer1ApiVersionValue.VERSION1)
-public class VolumeRecorderEma extends DataRecorderBase implements CustomModule, BarDataListener {
-    private final double[] halfLifeBars = new double[] {0, 4, 12, 36};
-    private EmaBars[] emaBuy = new EmaBars[halfLifeBars.length];
-    private EmaBars[] emaSell = new EmaBars[halfLifeBars.length];
+public class VolumeRecorderExponential extends DataRecorderBase implements CustomModule, BarDataListener {
+    private final int[] halfLifeBars = new int[] {0, 4, 12, 36};
+    private ExponentialSumBars[] emaBuy = new ExponentialSumBars[halfLifeBars.length];
+    private ExponentialSumBars[] emaSell = new ExponentialSumBars[halfLifeBars.length];
     private Object[] output = new Object[2 * halfLifeBars.length];
 
     @Override
     public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
         for (int i = 0; i < halfLifeBars.length; i++) {
-            emaBuy[i] = new EmaBars(halfLifeBars[i]);
-            emaSell[i] = new EmaBars(halfLifeBars[i]);
+            emaBuy[i] = new ExponentialSumBars(halfLifeBars[i]);
+            emaSell[i] = new ExponentialSumBars(halfLifeBars[i]);
         }
     }
 
@@ -51,6 +51,6 @@ public class VolumeRecorderEma extends DataRecorderBase implements CustomModule,
 
     @Override
     protected String getFilename() {
-        return "VolumeEma_" + System.currentTimeMillis() + ".txt";
+        return "VolumeExponential_" + System.currentTimeMillis() + ".txt";
     }
 }

@@ -2,7 +2,7 @@ package com.bookmap.sergey.api.indicators;
 
 import java.awt.Color;
 
-import com.bookmap.sergey.api.utils.data.EmaBars;
+import com.bookmap.sergey.api.utils.data.ExponentialSumBars;
 
 import velox.api.layer1.annotations.Layer1ApiVersion;
 import velox.api.layer1.annotations.Layer1ApiVersionValue;
@@ -29,10 +29,10 @@ public class AbsorptionIndicator implements CustomModule, BarDataListener {
     private double factor = longWindowNumBars / (double) shortWindowNumBars;
     private Indicator line1;
     private long barInterval = Intervals.INTERVAL_100_MILLISECONDS;
-    private EmaBars volumeLong = new EmaBars(longWindowNumBars);
-    private EmaBars volumeShort = new EmaBars(shortWindowNumBars);
-    private EmaBars trendLong = new EmaBars(longWindowNumBars);
-    private EmaBars trendShort = new EmaBars(shortWindowNumBars);
+    private ExponentialSumBars volumeLong = new ExponentialSumBars(longWindowNumBars);
+    private ExponentialSumBars volumeShort = new ExponentialSumBars(shortWindowNumBars);
+    private ExponentialSumBars trendLong = new ExponentialSumBars(longWindowNumBars);
+    private ExponentialSumBars trendShort = new ExponentialSumBars(shortWindowNumBars);
 
     @Override
     public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {

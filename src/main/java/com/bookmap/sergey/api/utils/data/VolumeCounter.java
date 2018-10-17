@@ -52,33 +52,24 @@ public class VolumeCounter {
         }
     }
 
-    static class VolumeExponential implements IVolumeCounter {
-        private double volume = 0;
-        private final double factor;
-        private Long nanosecondsPrev = null;
+    static class VolumeExponential extends ExponentialSum implements IVolumeCounter {
 
         public VolumeExponential(long intervalNanoseconds) {
-            factor = -Math.log(2) / intervalNanoseconds;
+            super(intervalNanoseconds);
         }
 
         @Override
         public void onTrade(long nanoseconds, int size) {
-            volume = getVolumeRaw(nanoseconds);
-            volume += size;
-            nanosecondsPrev = nanoseconds;
+            onUpdate(nanoseconds, size);
         }
 
         @Override
         public double getVolume(long nanoseconds) {
-            return Math.log(2) * getVolumeRaw(nanoseconds);
+            return getValue(nanoseconds);
         }
 
-        private double getVolumeRaw(long nanoseconds) {
-            if (nanosecondsPrev == null) {
-                nanosecondsPrev = nanoseconds;
-            }
-            long dt = nanoseconds > nanosecondsPrev ? nanoseconds - nanosecondsPrev : 0;
-            return volume * Math.exp(factor * dt);
+        public long getVolumeLong(long nanoseconds) {
+            return getValueLong(nanoseconds);
         }
     }
 
