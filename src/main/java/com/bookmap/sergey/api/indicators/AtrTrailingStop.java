@@ -3,10 +3,8 @@ package com.bookmap.sergey.api.indicators;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.TimeZone;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -17,7 +15,6 @@ import velox.api.layer1.annotations.Layer1ApiVersion;
 import velox.api.layer1.annotations.Layer1ApiVersionValue;
 import velox.api.layer1.annotations.Layer1SimpleAttachable;
 import velox.api.layer1.annotations.Layer1StrategyName;
-import velox.api.layer1.common.Log;
 import velox.api.layer1.data.InstrumentInfo;
 import velox.api.layer1.data.TradeInfo;
 import velox.api.layer1.messages.indicators.Layer1ApiUserMessageModifyIndicator.GraphType;
@@ -29,7 +26,7 @@ import velox.api.layer1.simplified.Indicator;
 import velox.api.layer1.simplified.InitialState;
 import velox.api.layer1.simplified.IntervalListener;
 import velox.api.layer1.simplified.Intervals;
-import velox.api.layer1.simplified.TimeListener;
+import velox.api.layer1.simplified.LineStyle;
 import velox.api.layer1.simplified.TradeDataListener;
 import velox.gui.StrategyPanel;
 import velox.gui.colors.ColorsConfigItem;
@@ -37,8 +34,7 @@ import velox.gui.colors.ColorsConfigItem;
 @Layer1SimpleAttachable
 @Layer1StrategyName("ATR Trailing Stop")
 @Layer1ApiVersion(Layer1ApiVersionValue.VERSION1)
-public class AtrTrailingStop
-        implements CustomModule, TradeDataListener, IntervalListener, TimeListener, CustomSettingsPanelProvider {
+public class AtrTrailingStop implements CustomModule, TradeDataListener, IntervalListener, CustomSettingsPanelProvider {
 
     private static enum Trend {
         Up, Down, Undefined
@@ -53,8 +49,8 @@ public class AtrTrailingStop
     private double sellPrice = Double.NaN;
     private double lastTradePrice = Double.NaN;
 
-    private final static Color defaultColorBuy = Color.PINK;
-    private final static Color defaultColorSell = Color.PINK;
+    private final static Color defaultColorBuy = Color.WHITE;
+    private final static Color defaultColorSell = Color.WHITE;
     private final static double defaultMultiplier = 1.5;
     private final static double defaultTr = 5;
     private final static double defaultAtr = defaultTr;
@@ -68,23 +64,27 @@ public class AtrTrailingStop
     private static double atr = defaultAtr;
     private static long barPeriod = defaultBarPeriod;
     private int atrNumBars = defaultAtrNumBars;
+    private final LineStyle defaultLineStyle = LineStyle.SOLID;
+    private LineStyle lineStyle = defaultLineStyle;
+    private final int defaultLineWidth = 3;
+    private int lineWidth = defaultLineWidth;
 
     private final JLabel labelTr = new JLabel();
     private final JLabel labelAtr = new JLabel();
 
-    private long currentTimeNanoseconds;
-
     @Override
     public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
         lineBuy = api.registerIndicator("ATR TS Buy", GraphType.PRIMARY);
-        lineBuy.setColor(colorBuy);
+        setVisualProperties(lineBuy);
         lineSell = api.registerIndicator("ATR TS Sell", GraphType.PRIMARY);
-        lineSell.setColor(colorSell);
+        setVisualProperties(lineSell);
+        lastTradePrice = initialState.getLastTradePrice();
+        onPriceUpdate();
     }
 
-    @Override
-    public void onTimestamp(long t) {
-        currentTimeNanoseconds = t;
+    private void setVisualProperties(final Indicator indicator) {
+        indicator.setLineStyle(lineStyle);
+        indicator.setWidth(lineWidth);
     }
 
     @Override
@@ -96,8 +96,8 @@ public class AtrTrailingStop
     public void onInterval() {
         tr = multiplier * (bar.getHigh() - bar.getLow());
         atr = ((atrNumBars - 1) * atr + tr) / atrNumBars;
-        onBarUpdate(bar);
         bar.startNext();
+        onAtrUpdate();
     }
 
     @Override
@@ -210,18 +210,47 @@ public class AtrTrailingStop
 
     private StrategyPanel getLineStyleSettingsPanel() {
         BookmapSettingsPanel panel = new BookmapSettingsPanel("Lines style");
-        addLineTypeSettings(panel);
+        addLineStyleSettings(panel);
         addLineWidthSettings(panel);
         return panel;
     }
 
-    private void addLineTypeSettings(final BookmapSettingsPanel panel) {
-        JComboBox<String> c = new JComboBox<>(new String[] { "SOLID", "DASH", "DOT", "DASHDOT" }); // TODO: Actions
+    private void addLineStyleSettings(final BookmapSettingsPanel panel) {
+        String[] lineStyles = Stream.of(LineStyle.values()).map(Object::toString).toArray(String[]::new);
+        JComboBox<String> c = new JComboBox<>(lineStyles);
+        c.setSelectedItem(lineStyle);
+        c.setEditable(false);
+        c.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int idx = c.getSelectedIndex();
+                if (idx != lineStyle.ordinal()) {
+                    lineStyle = LineStyle.values()[idx];
+                    lineBuy.setLineStyle(lineStyle);
+                    lineSell.setLineStyle(lineStyle);
+                }
+            }
+        });
         panel.addSettingsItem("Line type:", c);
     }
 
     private void addLineWidthSettings(final BookmapSettingsPanel panel) {
-        JComboBox<Integer> c = new JComboBox<>(new Integer[] { 1, 2, 3, 4, 5 }); // TODO: Actions
+        JComboBox<Integer> c = new JComboBox<>(new Integer[] { 1, 2, 3, 4, 5 });
+        c.setSelectedItem(lineWidth);
+        c.setEditable(false);
+        c.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int newLineWidth = (int) c.getSelectedItem();
+                if (newLineWidth != lineWidth) {
+                    lineWidth = newLineWidth;
+                    lineBuy.setWidth(lineWidth);
+                    lineSell.setWidth(lineWidth);
+                }
+            }
+        });
         panel.addSettingsItem("Line width:", c);
     }
 
@@ -297,7 +326,7 @@ public class AtrTrailingStop
         panel.addSettingsItem("Average True Range [ticks]:", labelAtr);
         return panel;
     }
-
+/*
     private void onBarUpdate(Bar bar) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd HH:mm:ss.SSS");
         sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
@@ -305,9 +334,8 @@ public class AtrTrailingStop
         String info = String.format("onBar time: %s. OHLC: %.0f, %.0f, %.0f, %.0f. Volume Buy Sell: %d, %d", t,
                 bar.getOpen(), bar.getHigh(), bar.getLow(), bar.getClose(), bar.getVolumeBuy(), bar.getVolumeSell());
         Log.info(info);
-        onAtrUpdate();
     }
-
+*/
     private void onAtrUpdate() {
         labelTr.setText(String.format("%.3f", tr));
         labelAtr.setText(String.format("%.3f", atr));

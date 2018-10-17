@@ -97,7 +97,7 @@ public class VolumeTracker
 
     private void addVolumeTypeSettings(final BookmapSettingsPanel panel) {
         JComboBox<String> c = new JComboBox<>(VolumeCounterType.names());
-        c.setSelectedIndex(volumeCounterType.ordinal());
+        c.setSelectedItem(volumeCounterType);
         c.setEditable(false);
         c.addActionListener(new ActionListener() {
 
