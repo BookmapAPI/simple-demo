@@ -24,13 +24,13 @@ import velox.api.layer1.simplified.TradeDataListener;
 @Layer1ApiVersion(Layer1ApiVersionValue.VERSION1)
 public class WeightedMidprice implements CustomModule, TradeDataListener, DepthDataListener, SnapshotEndListener {
 
-    Indicator indicator;
-    OrderBookBase orderBook = new OrderBookBase();
-    InitialState initialState;
+    protected Indicator indicator;
+    private OrderBookBase orderBook = new OrderBookBase();
+    protected InitialState initialState;
 
     @Override
     public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
-        indicator = api.registerIndicator("Weighted Midprice", GraphType.PRIMARY);
+        indicator = api.registerIndicator(getLineTitle(), GraphType.PRIMARY);
         indicator.setColor(Color.WHITE);
         this.initialState = initialState;
     }
@@ -59,4 +59,7 @@ public class WeightedMidprice implements CustomModule, TradeDataListener, DepthD
     public void stop() {
     }
 
+    protected String getLineTitle() {
+        return "Weighted Midprice";
+    }
 }

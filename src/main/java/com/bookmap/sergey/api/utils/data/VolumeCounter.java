@@ -9,8 +9,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class VolumeCounter {
 
-    public enum VolumeCounterType {
-        MOVING_SUM, EXPONENTIAL, CUMULATIVE;
+    public static enum VolumeCounterType {
+        EXPONENTIAL, MOVING_SUM, CUMULATIVE;
         public static String[] names() {
             return Stream.of(values()).map(Object::toString).toArray(String[]::new);
         }
@@ -22,7 +22,7 @@ public class VolumeCounter {
         public double getVolume(long nanoseconds);
     }
 
-    static class VolumeMovingSum implements IVolumeCounter {
+    private static class VolumeMovingSum implements IVolumeCounter {
 
         protected final long intervalNanoseconds;
         private ArrayList<Pair<Long, Integer>> trades = new ArrayList<>();
@@ -52,7 +52,7 @@ public class VolumeCounter {
         }
     }
 
-    static class VolumeExponential extends ExponentialSum implements IVolumeCounter {
+    private static class VolumeExponential extends ExponentialSum implements IVolumeCounter {
 
         public VolumeExponential(long intervalNanoseconds) {
             super(intervalNanoseconds);
@@ -67,13 +67,9 @@ public class VolumeCounter {
         public double getVolume(long nanoseconds) {
             return getValue(nanoseconds);
         }
-
-        public long getVolumeLong(long nanoseconds) {
-            return getValueLong(nanoseconds);
-        }
     }
 
-    static class VolumeCumulative implements IVolumeCounter {
+    private static class VolumeCumulative implements IVolumeCounter {
         private final long resetNanoseconds;
         private Long nextReset = null;
         private long volume = 0;

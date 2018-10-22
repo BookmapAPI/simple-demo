@@ -20,9 +20,9 @@ import velox.api.layer1.simplified.InitialState;
 import velox.api.layer1.simplified.Intervals;
 
 @Layer1SimpleAttachable
-@Layer1StrategyName("Intrinsic Price Indicator")
+@Layer1StrategyName("Intrinsic Price")
 @Layer1ApiVersion(Layer1ApiVersionValue.VERSION1)
-public class IntrinsicPriceIndicator implements CustomModule, BarDataListener {
+public class IntrinsicPrice implements CustomModule, BarDataListener {
 
     private int hypotheticalMarketOrderSize = 1000;
     private Indicator line;

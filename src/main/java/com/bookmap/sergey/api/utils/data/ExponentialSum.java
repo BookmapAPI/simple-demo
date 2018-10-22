@@ -33,6 +33,9 @@ public class ExponentialSum {
         if (nanosecondsPrev == null) {
             nanosecondsPrev = nanoseconds;
         }
+        if (nanoseconds < nanosecondsPrev) {
+            nanosecondsPrev = nanoseconds;
+        }
         long dt = nanoseconds - nanosecondsPrev;
         return value * Math.exp(dt * halfLifeFactor);
     }
