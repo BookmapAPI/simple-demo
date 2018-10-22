@@ -17,3 +17,6 @@ hs_err_pid*
 .settings
 .gradle/
 /bin/
+/build/
+
+/build-jar.cmd
