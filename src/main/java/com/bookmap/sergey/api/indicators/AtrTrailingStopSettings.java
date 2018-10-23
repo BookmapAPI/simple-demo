@@ -244,7 +244,7 @@ public abstract class AtrTrailingStopSettings implements CustomModule, CustomSet
                 onSettingsUpdated(SettingsName.BAR_PERIOD, c.getSelectedItem());
             }
         });
-        panel.addSettingsItem("Bar period (reloads if changed!) [seconds]:", c);
+        panel.addSettingsItem("Bar period (reloads if changed!) [sec]:", c);
     }
 
     private void addAtrNumBars(final BookmapSettingsPanel panel) {
