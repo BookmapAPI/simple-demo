@@ -1,6 +1,8 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
 
+version '1.0'
+
 repositories {
     mavenCentral()
 }
@@ -15,7 +17,7 @@ dependencies {
 }
 
 jar {
-    archiveName 'com-bookmap-api-sergey-ver-0.0.jar'
+    archiveName 'com-bookmap-api-simple-demo-' + project.version + '.jar'
 }
 
 eclipse {

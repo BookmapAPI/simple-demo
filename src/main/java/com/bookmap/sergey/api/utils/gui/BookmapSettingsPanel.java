@@ -1,4 +1,4 @@
-package com.bookmap.sergey.api.utils.gui;
+package com.bookmap.api.simple.demo.utils.gui;
 
 import java.awt.Component;
 import java.awt.GridBagConstraints;
