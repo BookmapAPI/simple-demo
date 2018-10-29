@@ -66,6 +66,30 @@ public class BookmapSettingsPanel extends StrategyPanel {
         add(c, constraints);
     }
 
+    public void addSettingsItem(Component left, Component center, Component right) {
+        
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridy = row++;
+        constraints.gridwidth = 1;
+        constraints.gridx = 1;
+        constraints.insets = new Insets(0, 0, ygap, 0);
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        
+        if (row == 1) {
+            constraints.insets.top = ygap;
+        }
+        
+        add(left, constraints);
+        
+        constraints.gridx = 2;
+        constraints.insets = new Insets(0, xgap, ygap, 0);
+        add(center, constraints);
+        
+        constraints.gridx = 3;
+        constraints.insets = new Insets(0, xgap, ygap, 0);
+        add(right, constraints);
+    }
+
     protected static void testSettingsPanel() {
         BookmapSettingsPanel panel = new BookmapSettingsPanel("Settings");
         panel.addSettingsItem(new JLabel("short label"));
