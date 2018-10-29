@@ -44,7 +44,7 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
     @Override
     public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
         super.initialize(alias, info, api, initialState);
-        lastTradePrice = initialState.getLastTradePrice();
+        lastTradePrice = fixPrice(initialState.getLastTradePrice());
         lastBidPrice = lastAskPrice = (int) Math.round(lastTradePrice);
         onAtrUpdated(tr, atr);
         onSettingsUpdated();
@@ -173,7 +173,7 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
     }
 
     private double getDefaultPrice(boolean isBuy) {
-        return isBuy ? lastTradePrice + atr : lastTradePrice - atr;
+        return fixPrice(isBuy ? lastTradePrice + atr : lastTradePrice - atr);
     }
 
     private double fixPrice(double price) {
