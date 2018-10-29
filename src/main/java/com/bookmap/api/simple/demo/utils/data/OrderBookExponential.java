@@ -18,16 +18,9 @@ public class OrderBookExponential extends OrderBookSum {
     }
 
     @Override
-    public void onDepth(boolean isBid, int price, int size) {
-        TreeMap<Integer, Integer> levels = isBid ? bids : asks;
-        Integer prevSize = levels.get(price);
-        if (prevSize == null) {
-            prevSize = 0;
-        }
+    public int onDepth(boolean isBid, int price, int size) {
         int priceLevel = calcPriceLevel(isBid, price);
-
-        super.onDepth(isBid, price, size);
-
+        int prevSize = super.onDepth(isBid, price, size);
         double value = isBid ? bidSizeWeighted : askSizeWeighted;
         if (priceLevel < 0) { // best price improved
             value *= Math.exp(halfLifeLevelFactor * priceLevel);
@@ -44,6 +37,7 @@ public class OrderBookExponential extends OrderBookSum {
         } else {
             askSizeWeighted = value;
         }
+        return prevSize;
     }
 
     private int calcPriceLevel(boolean isBid, int price) {
