@@ -51,7 +51,7 @@ public class QuotesDelta implements CustomModule, BarDataListener, DepthDataList
 
     @Override
     public void onDepth(boolean isBid, int price, int size) {
-        Integer prevSize = book.onDepth(isBid, price, size);
+        int prevSize = book.onDepth(isBid, price, size);
         if (snapshotCompleted) {
             int delta = size - prevSize;
             if (isBid) {
