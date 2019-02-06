@@ -63,8 +63,10 @@ public class MovingAveragePrice
 
     @Override
     public void onInterval() {
-        double price = ma.update(lastTradePrice);
-        indicator.addPoint(price);
+        if (!Double.isNaN(lastTradePrice)) {
+            double price = ma.update(lastTradePrice);
+            indicator.addPoint(price);
+        }
     }
 
     @Override
