@@ -158,6 +158,12 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
                 onSettingsUpdated();
             }
             break;
+        case RELOAD_CONDITION:
+            boolean reloadOnChange = (boolean) value;
+            if (reloadOnChange  != settings.reloadOnChange) {
+                settings.reloadOnChange = (boolean) value;
+            }
+            break;
         case UPDATE_CONDITION:
             UpdateCondition newUpdateCondition = UpdateCondition.fromString((String) value);
             if (newUpdateCondition != settings.updateCondition) {
