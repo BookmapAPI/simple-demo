@@ -15,6 +15,7 @@ import velox.api.layer1.simplified.Bar;
 import velox.api.layer1.simplified.BboListener;
 import velox.api.layer1.simplified.InitialState;
 import velox.api.layer1.simplified.IntervalListener;
+import velox.api.layer1.simplified.Intervals;
 import velox.api.layer1.simplified.SnapshotEndListener;
 import velox.api.layer1.simplified.TradeDataListener;
 
@@ -25,6 +26,8 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
         implements TradeDataListener, BboListener, IntervalListener
         , SnapshotEndListener
         {
+
+    private final static long defaultRecordingBarPeriod = Intervals.INTERVAL_1_SECOND;
 
     private static enum Trend {
         Up, Down, Undefined
@@ -54,7 +57,7 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
 
     @Override
     public long getInterval() {
-        return settings.barPeriod;
+        return defaultRecordingBarPeriod;
     }
 
     @Override
