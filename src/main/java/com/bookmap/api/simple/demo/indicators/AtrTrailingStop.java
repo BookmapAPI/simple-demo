@@ -2,8 +2,11 @@ package com.bookmap.api.simple.demo.indicators;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.TimeZone;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import velox.api.layer1.annotations.Layer1ApiVersion;
 import velox.api.layer1.annotations.Layer1ApiVersionValue;
 import velox.api.layer1.annotations.Layer1SimpleAttachable;
@@ -13,6 +16,7 @@ import velox.api.layer1.data.TradeInfo;
 import velox.api.layer1.simplified.Api;
 import velox.api.layer1.simplified.Bar;
 import velox.api.layer1.simplified.BboListener;
+import velox.api.layer1.simplified.HistoricalModeListener;
 import velox.api.layer1.simplified.InitialState;
 import velox.api.layer1.simplified.IntervalListener;
 import velox.api.layer1.simplified.Intervals;
@@ -52,6 +56,48 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
     private long t;
 
     private Bar bar = new Bar();
+    private Bar minimalIntervalBar = new Bar();
+    private final Object lock = new Object();
+    boolean isReloaded;
+    long intervalNumber;
+    
+    private List<ImmutablePair <Long, Bar>> bars = new LinkedList<>();
+    private List<ImmutablePair <Long, BboEvent>> bbos = new LinkedList<>();
+    
+    private static class BboEvent{
+        public final int bidPrice;
+        public final int askPrice;
+        
+        public BboEvent(int bidPrice, int askPrice) {
+            super();
+            this.bidPrice = bidPrice;
+            this.askPrice = askPrice;
+        }
+    }
+    
+    private static class StorageUnit {
+        long t;
+        double buyPrice;
+        double sellPrice;
+        double lastTradePrice;
+        int lastBidPrice;
+        int lastAskPrice;
+        double tr;
+        double atr;
+        
+        public StorageUnit(long t, double buyPrice, double sellPrice, double lastTradePrice, int lastBidPrice,
+                int lastAskPrice, double tr, double atr) {
+            super();
+            this.t = t;
+            this.buyPrice = buyPrice;
+            this.sellPrice = sellPrice;
+            this.lastTradePrice = lastTradePrice;
+            this.lastBidPrice = lastBidPrice;
+            this.lastAskPrice = lastAskPrice;
+            this.tr = tr;
+            this.atr = atr;
+        }
+    }
 
     @Override
     public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
@@ -68,37 +114,55 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
 
     @Override
     public void onInterval() {
-        tr = settings.multiplier * (bar.getHigh() - bar.getLow());
-        atr = ((settings.atrNumBars - 1) * atr + tr) / settings.atrNumBars;
-        bar.startNext();
-        onAtrUpdated(tr, atr);
-        if (settings.updateCondition == UpdateCondition.BAR) {
-            onUpdateTriggered();
+        synchronized (lock) {
+            bars.add(new ImmutablePair<Long, Bar>(t, getSemiClone(minimalIntervalBar)));
+            bbos.add(new ImmutablePair<Long, BboEvent>(t, new BboEvent(lastBidPrice, lastAskPrice)));
+            minimalIntervalBar.startNext();
+
+            long divider = settings.barPeriod / 1_000_000_000L;
+            
+            if (intervalNumber % divider == 0) {
                 double preCalculatedTr = settings.multiplier * (bar.getHigh() - bar.getLow());
                 tr = Double.isNaN(preCalculatedTr) ? defaultTr : preCalculatedTr;
                 double preCalculatedAtr = ((settings.atrNumBars - 1) * atr + tr) / settings.atrNumBars;
                 atr = Double.isNaN(preCalculatedAtr) ? defaultAtr : preCalculatedAtr;
+
+                bar.startNext();
+                onAtrUpdated(tr, atr);
+
+                if (settings.updateCondition == UpdateCondition.BAR) {
+                    onUpdateTriggered();
+                }
+            }
         }
+        intervalNumber++;
     }
 
     @Override
     public void onBbo(int bidPrice, int bidSize, int askPrice, int askSize) {
-        boolean updated = (bidPrice != lastBidPrice) || (askPrice != lastAskPrice);
-        lastBidPrice = bidPrice;
-        lastAskPrice = askPrice;
-        if (updated && settings.updateCondition == UpdateCondition.BBO) {
-            onUpdateTriggered();
+        synchronized (lock) {
+            boolean updated = (bidPrice != lastBidPrice) || (askPrice != lastAskPrice);
+                lastBidPrice = bidPrice;
+                lastAskPrice = askPrice;
+
+            if (updated && settings.updateCondition == UpdateCondition.BBO) {
+                onUpdateTriggered();
+            }
         }
     }
 
     @Override
     public void onTrade(double price, int size, TradeInfo tradeInfo) {
-        double pricePips = fixPrice(price);
-        bar.addTrade(tradeInfo.isBidAggressor, size, pricePips);
-        if (lastTradePrice != pricePips) {
-            lastTradePrice = pricePips;
-            if (settings.updateCondition == UpdateCondition.TRADE) {
-                onUpdateTriggered();
+        synchronized (lock) {
+            double pricePips = fixPrice(price);
+            bar.addTrade(tradeInfo.isBidAggressor, size, pricePips);
+            minimalIntervalBar.addTrade(tradeInfo.isBidAggressor, size, pricePips);
+            
+            if (lastTradePrice != pricePips) {
+                lastTradePrice = pricePips;
+                if (settings.updateCondition == UpdateCondition.TRADE) {
+                    onUpdateTriggered();
+                }
             }
         }
     }
@@ -154,7 +218,7 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
             long newBarPeriod = 1_000_000_000L * (int) value;
             if (newBarPeriod != settings.barPeriod) {
                 settings.barPeriod = newBarPeriod;
-                api.reload();
+                reloadIfshould();
             }
             break;
         case NUM_BARS:
@@ -175,6 +239,7 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
             if (newUpdateCondition != settings.updateCondition) {
                 settings.updateCondition = newUpdateCondition;
                 onSettingsUpdated();
+                reloadIfshould();
             }
             break;
         case SWITCH_CONDITION:
@@ -184,7 +249,7 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
                 onSettingsUpdated();
             }
         case ALL:
-            api.reload();
+            reloadIfshould();
         }
         onSettingsUpdated();
     }
@@ -251,5 +316,117 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
     @Override
     public void onTimestamp(long t) {
         this.t = t;
+    }
+    
+    private void reloadIfshould() {
+        if (settings.reloadOnChange) {
+            synchronized (lock) {
+                isReloaded = true;
+
+                // store fields
+                StorageUnit unit = new StorageUnit(t, buyPrice, sellPrice, lastTradePrice, lastBidPrice, lastAskPrice, tr, atr);
+
+                resetInstanceFields();
+
+                int size = bars.size();
+                clearHistoricalIntervals(size);
+                processHistoricalData(size);
+
+                // load fields
+                restoreFields(unit);
+                isReloaded = false;
+            }
+        }
+    }
+
+    private Bar getSemiClone(Bar bar) {
+        Bar semiClone = new Bar();
+        semiClone.setOpen(bar.getOpen());
+        semiClone.setHigh(bar.getHigh());
+        semiClone.setLow(bar.getLow());
+        semiClone.setClose(bar.getClose());
+        return semiClone;
+    }
+    
+    private void resetInstanceFields() {
+        buyPrice = Double.NaN;
+        sellPrice = Double.NaN;
+        lastTradePrice = Double.NaN;
+        lastAskPrice = 0;
+        lastBidPrice = 0;
+        tr = defaultTr;
+        atr = defaultAtr;
+    }
+    
+    private void restoreFields(StorageUnit unit) {
+        t = unit.t;
+        buyPrice = unit.buyPrice;
+        sellPrice = unit.sellPrice;
+        lastTradePrice = unit.lastTradePrice;
+        lastBidPrice = unit.lastBidPrice;
+        lastAskPrice = unit.lastAskPrice;
+        tr = unit.tr;
+        atr = unit.atr;
+    }
+    
+    private void clearHistoricalIntervals(int size) {
+        lineBuy.clear(bars.get(0).getLeft(), bars.get(size - 1).getLeft());
+        lineSell.clear(bars.get(0).getLeft(), bars.get(size - 1).getLeft());
+    }
+    
+    private void processHistoricalData(int size) {
+        boolean tradeUpdated = false;
+        boolean bboUpdated = false;
+        Bar reloadBar = new Bar();
+
+        for (int i = 0; i < size; i++) {
+            t = bars.get(i).getLeft();
+            Bar ohlc = bars.get(i).getRight();
+
+            reloadBar.addTrade(true, 1, ohlc.getHigh());
+            reloadBar.addTrade(true, 1, ohlc.getLow());
+            double pricePips = ohlc.getClose();
+
+            if (lastTradePrice != pricePips) {
+                lastTradePrice = pricePips;
+                tradeUpdated = true;
+            }
+
+            BboEvent bbo = bbos.get(i).getRight();
+            int askPrice = bbo.askPrice;
+            int bidPrice = bbo.bidPrice;
+            bboUpdated = (bidPrice != lastBidPrice) || (askPrice != lastAskPrice);
+
+            lastBidPrice = bidPrice;
+            lastAskPrice = askPrice;
+
+            if (settings.updateCondition == UpdateCondition.TRADE && tradeUpdated) {
+                onUpdateTriggered();
+            } else if (settings.updateCondition == UpdateCondition.BBO && bboUpdated) {
+                onUpdateTriggered();
+            } else if ((i + 1) % (settings.barPeriod / 1_000_000_000L) == 0) {
+                double preCalculatedTr = settings.multiplier * (reloadBar.getHigh() - reloadBar.getLow());
+                tr = Double.isNaN(preCalculatedTr) ? defaultTr : preCalculatedTr;
+                double preCalculatedAtr = ((settings.atrNumBars - 1) * atr + tr) / settings.atrNumBars;
+                atr = Double.isNaN(preCalculatedAtr) ? defaultAtr : preCalculatedAtr;
+
+                onAtrUpdated(tr, atr);
+
+                if (settings.updateCondition == UpdateCondition.BAR) {
+                    onUpdateTriggered();
+                }
+            }
+            tradeUpdated = false;
+            bboUpdated = false;
+        }
+    }
+
+    @Override
+    protected void addPoint(boolean isBuy, double value) {
+        if (isReloaded) {
+            (isBuy ? lineBuy : lineSell).addPoint(t, value);
+        } else {
+            (isBuy ? lineBuy : lineSell).addPoint(value);
+        }
     }
 }
