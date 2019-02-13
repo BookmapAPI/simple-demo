@@ -21,6 +21,7 @@ import velox.api.layer1.simplified.Api;
 import velox.api.layer1.simplified.CustomModule;
 import velox.api.layer1.simplified.CustomSettingsPanelProvider;
 import velox.api.layer1.simplified.Indicator;
+import velox.api.layer1.simplified.IndicatorModifiable;
 import velox.api.layer1.simplified.InitialState;
 import velox.api.layer1.simplified.Intervals;
 import velox.api.layer1.simplified.LineStyle;
@@ -88,8 +89,8 @@ public abstract class AtrTrailingStopSettings implements CustomModule, CustomSet
     private final JLabel labelTr = new JLabel();
     private final JLabel labelAtr = new JLabel();
 
-    private Indicator lineBuy;
-    private Indicator lineSell;
+    protected IndicatorModifiable lineBuy;
+    protected IndicatorModifiable lineSell;
 
     protected Settings settings;
     protected Api api;
@@ -98,9 +99,9 @@ public abstract class AtrTrailingStopSettings implements CustomModule, CustomSet
     public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
         this.api = api;
         settings = api.getSettings(Settings.class);
-        lineBuy = api.registerIndicator("ATR TS Buy", GraphType.PRIMARY);
+        lineBuy = api.registerIndicatorModifiable("ATR TS Buy", GraphType.PRIMARY);
         setVisualProperties(lineBuy);
-        lineSell = api.registerIndicator("ATR TS Sell", GraphType.PRIMARY);
+        lineSell = api.registerIndicatorModifiable("ATR TS Sell", GraphType.PRIMARY);
         setVisualProperties(lineSell);
     }
 
