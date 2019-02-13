@@ -65,6 +65,10 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
         onAtrUpdated(tr, atr);
         if (settings.updateCondition == UpdateCondition.BAR) {
             onUpdateTriggered();
+                double preCalculatedTr = settings.multiplier * (bar.getHigh() - bar.getLow());
+                tr = Double.isNaN(preCalculatedTr) ? defaultTr : preCalculatedTr;
+                double preCalculatedAtr = ((settings.atrNumBars - 1) * atr + tr) / settings.atrNumBars;
+                atr = Double.isNaN(preCalculatedAtr) ? defaultAtr : preCalculatedAtr;
         }
     }
 
