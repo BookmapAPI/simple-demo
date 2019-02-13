@@ -15,13 +15,16 @@ import velox.api.layer1.simplified.Bar;
 import velox.api.layer1.simplified.BboListener;
 import velox.api.layer1.simplified.InitialState;
 import velox.api.layer1.simplified.IntervalListener;
+import velox.api.layer1.simplified.SnapshotEndListener;
 import velox.api.layer1.simplified.TradeDataListener;
 
 @Layer1SimpleAttachable
 @Layer1StrategyName("ATR Trailing Stop")
 @Layer1ApiVersion(Layer1ApiVersionValue.VERSION1)
 public class AtrTrailingStop extends AtrTrailingStopSettings
-        implements TradeDataListener, BboListener, IntervalListener {
+        implements TradeDataListener, BboListener, IntervalListener
+        , SnapshotEndListener
+        {
 
     private static enum Trend {
         Up, Down, Undefined
@@ -47,7 +50,6 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
         lastTradePrice = fixPrice(initialState.getLastTradePrice());
         lastBidPrice = lastAskPrice = (int) Math.round(lastTradePrice);
         onAtrUpdated(tr, atr);
-        onSettingsUpdated();
     }
 
     @Override
@@ -215,5 +217,10 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
         String info = String.format("onBar time: %s. OHLC: %.0f, %.0f, %.0f, %.0f. Volume Buy Sell: %d, %d", t,
                 bar.getOpen(), bar.getHigh(), bar.getLow(), bar.getClose(), bar.getVolumeBuy(), bar.getVolumeSell());
         return info;
+    }
+
+    @Override
+    public void onSnapshotEnd() {
+        onSettingsUpdated();
     }
 }
