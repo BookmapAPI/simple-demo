@@ -33,7 +33,7 @@ public abstract class AtrTrailingStopSettings implements CustomModule, CustomSet
     protected abstract void onSettingsUpdated(SettingsName s, Object value);
 
     public static enum SettingsName {
-        MULTIPLIER, BAR_PERIOD, NUM_BARS, UPDATE_CONDITION, SWITCH_CONDITION, ALL
+        MULTIPLIER, BAR_PERIOD, NUM_BARS, UPDATE_CONDITION, SWITCH_CONDITION, RELOAD_CONDITION, ALL
     }
 
     public static enum UpdateCondition {
@@ -84,6 +84,7 @@ public abstract class AtrTrailingStopSettings implements CustomModule, CustomSet
         public int atrNumBars = defaultAtrNumBars;
         public UpdateCondition updateCondition = defaultUpdateCondition;
         public int switchCondition = defaultSwitchCondition;
+        public boolean reloadOnChange = true;
     }
 
     private final JLabel labelTr = new JLabel();
@@ -212,6 +213,7 @@ public abstract class AtrTrailingStopSettings implements CustomModule, CustomSet
         addAtrNumBars(panel);
         addUpdateCondition(panel);
         addSwitchCondition(panel);
+        addReloadCondition(panel);
         addResetButton(panel);
         return panel;
     }
@@ -292,6 +294,21 @@ public abstract class AtrTrailingStopSettings implements CustomModule, CustomSet
             }
         });
         panel.addSettingsItem("TS switch condition [ticks crossed]:", c);
+    }
+    
+    private void addReloadCondition(final BookmapSettingsPanel panel) {
+        JComboBox<Boolean> c = new JComboBox<>(new Boolean[] { true, false}) ;
+        setAlignment(c);
+        c.setSelectedItem(settings.reloadOnChange);
+        c.setEditable(false);
+        c.addActionListener(new ActionListener() {
+            
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                onSettingsUpdated(SettingsName.RELOAD_CONDITION, c.getSelectedItem());
+            }
+        });
+        panel.addSettingsItem("Reload if changed:", c);
     }
 
     private void addResetButton(final BookmapSettingsPanel panel) {
