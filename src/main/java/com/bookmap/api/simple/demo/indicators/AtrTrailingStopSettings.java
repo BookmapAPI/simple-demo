@@ -62,15 +62,15 @@ public abstract class AtrTrailingStopSettings implements CustomModule, CustomSet
         }
     }
 
-    private final static Color defaultColorBuy = Color.WHITE;
-    private final static Color defaultColorSell = Color.WHITE;
-    private final static LineStyle defaultLineStyle = LineStyle.SOLID;
-    private final static int defaultLineWidth = 3;
-    private final static double defaultMultiplier = 2;
-    private final static long defaultBarPeriod = Intervals.INTERVAL_1_MINUTE;
-    private final static int defaultAtrNumBars = 10;
-    private final static UpdateCondition defaultUpdateCondition = UpdateCondition.TRADE;
-    private final static int defaultSwitchCondition = 1;
+    private static final Color defaultColorBuy = Color.WHITE;
+    private static final Color defaultColorSell = Color.WHITE;
+    private static final LineStyle defaultLineStyle = LineStyle.SOLID;
+    private static final int defaultLineWidth = 3;
+    private static final double defaultMultiplier = 2;
+    private static final long defaultBarPeriod = Intervals.INTERVAL_1_MINUTE;
+    private static final int defaultAtrNumBars = 10;
+    private static final UpdateCondition defaultUpdateCondition = UpdateCondition.TRADE;
+    private static final int defaultSwitchCondition = 1;
 
     @StrategySettingsVersion(currentVersion = 1, compatibleVersions = {})
     public static class Settings {
@@ -143,7 +143,7 @@ public abstract class AtrTrailingStopSettings implements CustomModule, CustomSet
 
     private void addColorsSettings(final BookmapSettingsPanel panel) {
         panel.addSettingsItem("Buy Trailing Stop color:", createColorsConfigItem(true));
-        panel.addSettingsItem("Sell Trailing Stop color:", createColorsConfigItem(false));        
+        panel.addSettingsItem("Sell Trailing Stop color:", createColorsConfigItem(false));
     }
 
     private ColorsConfigItem createColorsConfigItem(boolean isBuy) {
