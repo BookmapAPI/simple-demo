@@ -17,6 +17,7 @@ import velox.api.layer1.simplified.InitialState;
 import velox.api.layer1.simplified.IntervalListener;
 import velox.api.layer1.simplified.Intervals;
 import velox.api.layer1.simplified.SnapshotEndListener;
+import velox.api.layer1.simplified.TimeListener;
 import velox.api.layer1.simplified.TradeDataListener;
 
 @Layer1SimpleAttachable
@@ -25,6 +26,7 @@ import velox.api.layer1.simplified.TradeDataListener;
 public class AtrTrailingStop extends AtrTrailingStopSettings
         implements TradeDataListener, BboListener, IntervalListener
         , SnapshotEndListener
+        , TimeListener        
         {
 
     private final static long defaultRecordingBarPeriod = Intervals.INTERVAL_1_SECOND;
@@ -44,6 +46,7 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
     private double lastTradePrice = Double.NaN;
     private int lastBidPrice;
     private int lastAskPrice;
+    private long t;
 
     private Bar bar = new Bar();
 
@@ -235,5 +238,10 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
     @Override
     public void onSnapshotEnd() {
         onSettingsUpdated();
+    }
+
+    @Override
+    public void onTimestamp(long t) {
+        this.t = t;
     }
 }
