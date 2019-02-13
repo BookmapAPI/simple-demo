@@ -26,6 +26,7 @@ import velox.api.layer1.simplified.TradeDataListener;
 public class AtrTrailingStop extends AtrTrailingStopSettings
         implements TradeDataListener, BboListener, IntervalListener
         , SnapshotEndListener
+        , HistoricalModeListener
         , TimeListener        
         {
 
@@ -238,6 +239,11 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
     @Override
     public void onSnapshotEnd() {
         onSettingsUpdated();
+    }
+
+    @Override
+    public void onRealtimeStart() {
+
     }
 
     @Override
