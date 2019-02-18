@@ -57,6 +57,7 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
 
     private Bar bar = new Bar();
     private Bar minimalIntervalBar = new Bar();
+    private Bar liveIntervalBar = new Bar();
     private final Object lock = new Object();
     boolean isReloaded;
     long intervalNumber;
@@ -119,9 +120,7 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
             bbos.add(new ImmutablePair<Long, BboEvent>(t, new BboEvent(lastBidPrice, lastAskPrice)));
             minimalIntervalBar.startNext();
 
-            long divider = settings.barPeriod / 1_000_000_000L;
-            
-            if (intervalNumber % divider == 0) {
+            if (isTimeToUpdate()) {
                 double preCalculatedTr = settings.multiplier * (bar.getHigh() - bar.getLow());
                 tr = Double.isNaN(preCalculatedTr) ? defaultTr : preCalculatedTr;
                 double preCalculatedAtr = ((settings.atrNumBars - 1) * atr + tr) / settings.atrNumBars;
@@ -428,5 +427,10 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
         } else {
             (isBuy ? lineBuy : lineSell).addPoint(value);
         }
+    }
+    
+    private boolean isTimeToUpdate() {
+        long divider = settings.barPeriod / 1_000_000_000L;
+        return intervalNumber % divider == 0 ? true : false;
     }
 }
