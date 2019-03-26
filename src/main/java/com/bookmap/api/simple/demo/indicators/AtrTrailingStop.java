@@ -20,12 +20,10 @@ import velox.api.layer1.simplified.HistoricalModeListener;
 import velox.api.layer1.simplified.InitialState;
 import velox.api.layer1.simplified.IntervalListener;
 import velox.api.layer1.simplified.Intervals;
-import velox.api.layer1.simplified.ReceiveHistory;
 import velox.api.layer1.simplified.SnapshotEndListener;
 import velox.api.layer1.simplified.TimeListener;
 import velox.api.layer1.simplified.TradeDataListener;
 
-@ReceiveHistory(shouldReceiveHistory = true)
 @Layer1SimpleAttachable
 @Layer1StrategyName("ATR Trailing Stop")
 @Layer1ApiVersion(Layer1ApiVersionValue.VERSION1)
