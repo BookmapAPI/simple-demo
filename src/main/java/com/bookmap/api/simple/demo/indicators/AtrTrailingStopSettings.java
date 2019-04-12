@@ -21,6 +21,7 @@ import velox.api.layer1.simplified.Api;
 import velox.api.layer1.simplified.CustomModule;
 import velox.api.layer1.simplified.CustomSettingsPanelProvider;
 import velox.api.layer1.simplified.Indicator;
+import velox.api.layer1.simplified.IndicatorModifiable;
 import velox.api.layer1.simplified.InitialState;
 import velox.api.layer1.simplified.Intervals;
 import velox.api.layer1.simplified.LineStyle;
@@ -32,7 +33,7 @@ public abstract class AtrTrailingStopSettings implements CustomModule, CustomSet
     protected abstract void onSettingsUpdated(SettingsName s, Object value);
 
     public static enum SettingsName {
-        MULTIPLIER, BAR_PERIOD, NUM_BARS, UPDATE_CONDITION, SWITCH_CONDITION, ALL
+        MULTIPLIER, BAR_PERIOD, NUM_BARS, UPDATE_CONDITION, SWITCH_CONDITION, RELOAD_CONDITION, ALL
     }
 
     public static enum UpdateCondition {
@@ -61,15 +62,15 @@ public abstract class AtrTrailingStopSettings implements CustomModule, CustomSet
         }
     }
 
-    private final static Color defaultColorBuy = Color.WHITE;
-    private final static Color defaultColorSell = Color.WHITE;
-    private final static LineStyle defaultLineStyle = LineStyle.SOLID;
-    private final static int defaultLineWidth = 3;
-    private final static double defaultMultiplier = 2;
-    private final static long defaultBarPeriod = Intervals.INTERVAL_1_MINUTE;
-    private final static int defaultAtrNumBars = 10;
-    private final static UpdateCondition defaultUpdateCondition = UpdateCondition.TRADE;
-    private final static int defaultSwitchCondition = 1;
+    private static final Color defaultColorBuy = Color.WHITE;
+    private static final Color defaultColorSell = Color.WHITE;
+    private static final LineStyle defaultLineStyle = LineStyle.SOLID;
+    private static final int defaultLineWidth = 3;
+    private static final double defaultMultiplier = 2;
+    private static final long defaultBarPeriod = Intervals.INTERVAL_1_MINUTE;
+    private static final int defaultAtrNumBars = 10;
+    private static final UpdateCondition defaultUpdateCondition = UpdateCondition.TRADE;
+    private static final int defaultSwitchCondition = 1;
 
     @StrategySettingsVersion(currentVersion = 1, compatibleVersions = {})
     public static class Settings {
@@ -83,13 +84,14 @@ public abstract class AtrTrailingStopSettings implements CustomModule, CustomSet
         public int atrNumBars = defaultAtrNumBars;
         public UpdateCondition updateCondition = defaultUpdateCondition;
         public int switchCondition = defaultSwitchCondition;
+        public boolean reloadOnChange = true;
     }
 
     private final JLabel labelTr = new JLabel();
     private final JLabel labelAtr = new JLabel();
 
-    private Indicator lineBuy;
-    private Indicator lineSell;
+    protected IndicatorModifiable lineBuy;
+    protected IndicatorModifiable lineSell;
 
     protected Settings settings;
     protected Api api;
@@ -98,9 +100,9 @@ public abstract class AtrTrailingStopSettings implements CustomModule, CustomSet
     public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
         this.api = api;
         settings = api.getSettings(Settings.class);
-        lineBuy = api.registerIndicator("ATR TS Buy", GraphType.PRIMARY);
+        lineBuy = api.registerIndicatorModifiable("ATR TS Buy", GraphType.PRIMARY);
         setVisualProperties(lineBuy);
-        lineSell = api.registerIndicator("ATR TS Sell", GraphType.PRIMARY);
+        lineSell = api.registerIndicatorModifiable("ATR TS Sell", GraphType.PRIMARY);
         setVisualProperties(lineSell);
     }
 
@@ -141,7 +143,7 @@ public abstract class AtrTrailingStopSettings implements CustomModule, CustomSet
 
     private void addColorsSettings(final BookmapSettingsPanel panel) {
         panel.addSettingsItem("Buy Trailing Stop color:", createColorsConfigItem(true));
-        panel.addSettingsItem("Sell Trailing Stop color:", createColorsConfigItem(false));        
+        panel.addSettingsItem("Sell Trailing Stop color:", createColorsConfigItem(false));
     }
 
     private ColorsConfigItem createColorsConfigItem(boolean isBuy) {
@@ -211,6 +213,7 @@ public abstract class AtrTrailingStopSettings implements CustomModule, CustomSet
         addAtrNumBars(panel);
         addUpdateCondition(panel);
         addSwitchCondition(panel);
+        addReloadCondition(panel);
         addResetButton(panel);
         return panel;
     }
@@ -291,6 +294,21 @@ public abstract class AtrTrailingStopSettings implements CustomModule, CustomSet
             }
         });
         panel.addSettingsItem("TS switch condition [ticks crossed]:", c);
+    }
+    
+    private void addReloadCondition(final BookmapSettingsPanel panel) {
+        JComboBox<Boolean> c = new JComboBox<>(new Boolean[] { true, false}) ;
+        setAlignment(c);
+        c.setSelectedItem(settings.reloadOnChange);
+        c.setEditable(false);
+        c.addActionListener(new ActionListener() {
+            
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                onSettingsUpdated(SettingsName.RELOAD_CONDITION, c.getSelectedItem());
+            }
+        });
+        panel.addSettingsItem("Reload if changed:", c);
     }
 
     private void addResetButton(final BookmapSettingsPanel panel) {
