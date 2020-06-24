@@ -7,6 +7,7 @@ import velox.api.layer1.annotations.Layer1ApiVersion;
 import velox.api.layer1.annotations.Layer1ApiVersionValue;
 import velox.api.layer1.annotations.Layer1SimpleAttachable;
 import velox.api.layer1.annotations.Layer1StrategyName;
+import velox.api.layer1.common.DirectoryResolver;
 import velox.api.layer1.data.InstrumentInfo;
 import velox.api.layer1.data.TradeInfo;
 import velox.api.layer1.simplified.Api;
@@ -61,7 +62,9 @@ public class DataRecorder extends DataRecorderBase
 
     @Override
     protected String getFilename() {
-        return "DataRecorder_" + System.currentTimeMillis() + ".txt";
+        return DirectoryResolver.getBookmapDirectoryByName("Data Recorder")
+                .resolve("DataRecorder_" + System.currentTimeMillis() + ".txt")
+                .toString();
     }
 
     @Override

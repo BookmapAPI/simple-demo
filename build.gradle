@@ -12,8 +12,8 @@ repositories {
 
 dependencies {
 
-    compileOnly group: 'com.bookmap.api', name: 'api-core', version: '7.0.0.72';
-    compileOnly group: 'com.bookmap.api', name: 'api-simplified', version: '7.0.0.72';
+    compileOnly group: 'com.bookmap.api', name: 'api-core', version: '7.1.0.43';
+    compileOnly group: 'com.bookmap.api', name: 'api-simplified', version: '7.1.0.43';
     compileOnly group: 'org.apache.commons', name: 'commons-lang3', version: '3.4'
 }
 
