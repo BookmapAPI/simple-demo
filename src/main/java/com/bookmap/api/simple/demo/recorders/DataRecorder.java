@@ -1,5 +1,8 @@
 package com.bookmap.api.simple.demo.recorders;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -25,10 +28,13 @@ public class DataRecorder extends DataRecorderBase
         implements CustomModule, DepthDataListener, TradeDataListener, BboListener, TimeListener {
 
     private long nanoseconds;
+    private final Path dataRecorderStoragePath = DirectoryResolver.getBookmapDirectoryByName("Data Recorder");
+
     SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd HH:mm:ss.SSS");
 
     @Override
     public void initialize(String alias, InstrumentInfo info, Api api, InitialState initialState) {
+        ensureStorageDirExists();
         addInstrument(alias, info);
     }
 
@@ -62,9 +68,7 @@ public class DataRecorder extends DataRecorderBase
 
     @Override
     protected String getFilename() {
-        return DirectoryResolver.getBookmapDirectoryByName("Data Recorder")
-                .resolve("DataRecorder_" + System.currentTimeMillis() + ".txt")
-                .toString();
+        return dataRecorderStoragePath.resolve("DataRecorder_" + System.currentTimeMillis() + ".txt").toString();
     }
 
     @Override
@@ -77,5 +81,13 @@ public class DataRecorder extends DataRecorderBase
         long nanos = nanoseconds - 1_000_000L * millis;
         String t = sdf.format(new Date(millis)) + String.format("%06d", nanos);
         return t;
+    }
+
+    private void ensureStorageDirExists() {
+        try {
+            Files.createDirectories(dataRecorderStoragePath);
+        } catch (IOException e) {
+            throw new RuntimeException("Can't create storage directory", e);
+        }
     }
 }
