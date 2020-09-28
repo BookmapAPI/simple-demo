@@ -136,17 +136,17 @@ public class AtrTrailingStop extends AtrTrailingStopSettings
     
     private void updateAndOrTriggerBbo(int i) {
         Bar askBar = asks.get(i).getRight();
-        Bar bidBar = asks.get(i).getRight();
+        Bar bidBar = bids.get(i).getRight();
 
         checkBboUpdates(askBar.getHigh(), bidBar.getLow());
         checkBboUpdates(askBar.getClose(), bidBar.getClose());
     }
     
     private void checkBboUpdates(double askPrice, double bidPrice) {
-        boolean updated = (askPrice!= lastBidPrice || bidPrice!= lastAskPrice);
+        boolean updated = (bidPrice!= lastBidPrice || askPrice!= lastAskPrice);
         if (updated) {
-            lastBidPrice = (int) askPrice;
-            lastAskPrice = (int) bidPrice;
+            lastBidPrice = (int) bidPrice;
+            lastAskPrice = (int) askPrice;
             
             if (settings.updateCondition == UpdateCondition.BBO) {
                 onUpdateTriggered();
